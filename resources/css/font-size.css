@@ -1,0 +1,75 @@
+/* =====================================================
+   Makabro — Escalas de tamaño de fuente
+   Aplicadas al elemento <html> mediante JS + localStorage
+   ===================================================== */
+
+/* ── BASE (por defecto si no hay clase) ──────────────── */
+html {
+    font-size: 16px; /* 1rem = 16px */
+}
+
+/* ── PEQUEÑA ─────────────────────────────────────────── */
+html.mk-font-sm {
+    font-size: 13px;
+}
+
+/* ── MEDIANA (igual al base, explicit) ───────────────── */
+html.mk-font-md {
+    font-size: 16px;
+}
+
+/* ── GRANDE ──────────────────────────────────────────── */
+html.mk-font-lg {
+    font-size: 19px;
+}
+
+/* ── Botón del switcher en la topbar ─────────────────── */
+.mk-font-switcher {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 0, 0, .05);
+    border-radius: 9999px;
+    padding: 3px 5px;
+}
+
+.dark .mk-font-switcher {
+    background: rgba(255, 255, 255, .07);
+}
+
+.mk-font-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-weight: 700;
+    color: #78716c;
+    transition: background .15s, color .15s, transform .1s;
+    line-height: 1;
+    font-family: inherit;
+}
+
+.dark .mk-font-btn {
+    color: #a8a29e;
+}
+
+.mk-font-btn:hover {
+    background: rgba(245, 158, 11, .15);
+    color: #d97706;
+    transform: scale(1.1);
+}
+
+.mk-font-btn.mk-active {
+    background: #f59e0b;
+    color: #1c1917;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, .4);
+}
+
+.mk-font-btn-sm { font-size: 11px; }
+.mk-font-btn-md { font-size: 14px; }
+.mk-font-btn-lg { font-size: 17px; }
