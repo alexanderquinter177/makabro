@@ -16,9 +16,14 @@ use App\Models\Inventory\Inventario;
 use App\Models\Inventory\Novedad;
 use App\Models\Audit\Auditoria;
 
-class User extends Authenticatable
+// 1. Importaciones de Filament agregadas aquí
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
+
+// 2. Implementación de FilamentUser agregada a la clase
+class User extends Authenticatable implements FilamentUser
 {
-    use HasFactory, Notifiable, SoftDeletes, HasAuditSignature,HasRoles;
+    use HasFactory, Notifiable, SoftDeletes, HasAuditSignature, HasRoles;
 
     protected $table = 'users';
 
@@ -187,5 +192,16 @@ class User extends Authenticatable
         return $query->whereHas('sedes', function ($q) {
             $q->wherePivot('activo', true);
         });
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. Método de autorización de Filament agregado aquí
+    // -------------------------------------------------------------------------
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Esto levanta el error 403 y deja entrar a los usuarios.
+        // Como ya usas Spatie (HasRoles), el control real de qué puede ver 
+        // cada persona lo harás con sus roles más adelante.
+        return true;
     }
 }
