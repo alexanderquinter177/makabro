@@ -38,7 +38,6 @@ class CustomLogin extends BaseLogin
                 $this->getCedulaFormComponent(),
                 $this->getPasswordFormComponent(),
                 $this->getSedeFormComponent(),
-                $this->getRememberFormComponent(),
             ]);
     }
 
@@ -118,7 +117,7 @@ class CustomLogin extends BaseLogin
             }
 
             // 5. Hacer login manualmente
-            \Filament\Facades\Filament::auth()->login($user, $data['remember'] ?? false);
+            \Filament\Facades\Filament::auth()->login($user, false);
 
             // 6. Guardar la sede en sesión
             session(['sede_id' => $selectedSedeId]);
