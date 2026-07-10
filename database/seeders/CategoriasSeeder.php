@@ -11,10 +11,14 @@ class CategoriasSeeder extends Seeder
 {
     public function run()
     {
-        // Desactivar verificaciones de clave foránea temporalmente
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        // Desactivar verificaciones de clave foránea temporalmente en MySQL
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        }
         Categoria::truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
 
         $categorias = [
             [

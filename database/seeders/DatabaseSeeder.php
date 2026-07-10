@@ -3,27 +3,28 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
+        // Check if using PostgreSQL
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            // Instead of foreign_key_checks, use this for PostgreSQL
+            DB::statement('SET CONSTRAINTS ALL DEFERRED;');
+        }
+        
         $this->call([
-            // 1. Primero las sedes
             SedesSeeder::class,
-            
-            // 2. Roles y Permisos (crea los roles y permisos)
             RolesAndPermissionsSeeder::class,
-            
-            // 3. Usuario Admin (solo 1 usuario)
             UsersSeeder::class,
-            
-            // 4. Catálogos
             UnidadesMedidaSeeder::class,
             CategoriasSeeder::class,
         ]);
+        
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement('SET CONSTRAINTS ALL IMMEDIATE;');
+        }
     }
 }

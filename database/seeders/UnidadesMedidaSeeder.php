@@ -10,9 +10,13 @@ class UnidadesMedidaSeeder extends Seeder
 {
     public function run()
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        }
         UnidadMedida::truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        }
 
         $unidades = [
             [
