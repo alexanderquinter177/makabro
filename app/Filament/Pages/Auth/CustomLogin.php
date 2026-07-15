@@ -37,7 +37,6 @@ class CustomLogin extends BaseLogin
             ->components([
                 $this->getCedulaFormComponent(),
                 $this->getPasswordFormComponent(),
-                $this->getSedeFormComponent(),
             ]);
     }
 
@@ -56,39 +55,18 @@ class CustomLogin extends BaseLogin
     }
 
     /**
-     * Genera el componente de selección de Sede.
-     */
-    protected function getSedeFormComponent(): \Filament\Schemas\Components\Component
-    {
-        return Select::make('sede_id')
-            ->label('Sede de Conexión')
-            ->options(Sede::activas()->pluck('nombre', 'id'))
-            ->required()
-            ->searchable()
-            ->placeholder('Seleccione la sede a conectarse');
-    }
-
-    /**
      * Sobrescribe el proceso de autenticación.
-     * Autentica por cédula + contraseña y valida acceso a la sede.
+     * Autentica por cédula + contraseña y valida acceso a alguna sede activa.
      */
     public function authenticate(): ?LoginResponse
     {
         try {
             $data = $this->form->getState();
 
-            $cedula        = $data['cedula']   ?? null;
-            $password      = $data['password'] ?? null;
-            $selectedSedeId = $data['sede_id'] ?? null;
+            $cedula   = $data['cedula']   ?? null;
+            $password = $data['password'] ?? null;
 
-            // 1. Validar que se haya seleccionado sede
-            if (empty($selectedSedeId)) {
-                throw ValidationException::withMessages([
-                    'data.sede_id' => 'Debes seleccionar una sede para continuar.',
-                ]);
-            }
-
-            // 2. Buscar usuario por cédula
+            // 1. Buscar usuario por cédula
             $user = User::where('cedula', $cedula)->first();
 
             if (!$user || !\Illuminate\Support\Facades\Hash::check($password, $user->password)) {
@@ -97,30 +75,30 @@ class CustomLogin extends BaseLogin
                 ]);
             }
 
-            // 3. Verificar que el usuario esté activo
+            // 2. Verificar que el usuario esté activo
             if (!$user->activo) {
                 throw ValidationException::withMessages([
                     'data.cedula' => 'El usuario se encuentra inactivo. Contacta al administrador.',
                 ]);
             }
 
-            // 4. Verificar que el usuario tiene acceso a la sede seleccionada
-            $tieneAcceso = $user->sedes()
-                ->where('sedes.id', $selectedSedeId)
-                ->wherePivot('activo', true)
-                ->exists();
+            // 3. Verificar que el usuario tiene al menos una sede activa asignada
+            $sedesActivas = $user->sedesActivas()->get();
 
-            if (!$tieneAcceso) {
+            if ($sedesActivas->isEmpty()) {
                 throw ValidationException::withMessages([
-                    'data.sede_id' => 'No tienes permiso para acceder a esta sede.',
+                    'data.cedula' => 'No tienes ninguna sede activa asignada. Contacta al administrador.',
                 ]);
             }
 
-            // 5. Hacer login manualmente
+            // 4. Hacer login manualmente
             \Filament\Facades\Filament::auth()->login($user, false);
 
-            // 6. Guardar la sede en sesión
-            session(['sede_id' => $selectedSedeId]);
+            // 5. Si tiene exactamente una sede, guardarla en sesión inmediatamente
+            if ($sedesActivas->count() === 1) {
+                session(['sede_id' => $sedesActivas->first()->id]);
+            }
+
             session()->regenerate();
 
             return app(LoginResponse::class);

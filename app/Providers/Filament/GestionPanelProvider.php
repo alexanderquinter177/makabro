@@ -318,6 +318,7 @@ class GestionPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                \App\Http\Middleware\CheckSelectedSede::class,
             ]);
     }
 }

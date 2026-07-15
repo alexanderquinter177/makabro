@@ -1,5 +1,8 @@
-<div x-data="{ open: false }" style="position:relative;display:flex;align-items:center;margin-right:8px;" @keydown.escape.window="open = false">
-
+<div 
+    x-data="{ open: false }" 
+    class="relative flex items-center mr-2 sm:mr-8 z-50"
+    @keydown.escape.window="open = false"
+>
     {{-- ===================== BOTÓN ===================== --}}
     <button
         @click="open = !open"
