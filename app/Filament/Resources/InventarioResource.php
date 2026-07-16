@@ -36,6 +36,15 @@ class InventarioResource extends Resource
         return InventariosTable::configure($table);
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        if (session()->has('sede_id')) {
+            return parent::getEloquentQuery()->where('sede_id', session('sede_id'));
+        }
+
+        return parent::getEloquentQuery();
+    }
+
     public static function getRelations(): array
     {
         return [

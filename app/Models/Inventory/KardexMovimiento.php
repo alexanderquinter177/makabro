@@ -14,15 +14,14 @@ class KardexMovimiento extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'kardex_movimientos';
+     protected $table = 'kardex_movimientos';
 
-    // Desactivamos updated_at ya que el Kardex es inmutable
     const UPDATED_AT = null;
 
     protected $fillable = [
         'sede_id',
         'producto_id',
-        'tipo_movimiento', // 'entrada', 'salida', 'ajuste'
+        'tipo_movimiento',
         'cantidad',
         'saldo_anterior',
         'saldo_despues',

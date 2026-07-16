@@ -29,14 +29,30 @@ class KardexMovimientosTable
                     ->label('Tipo de Movimiento')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'entrada_compra' => 'success',
-                        'salida_venta' => 'danger',
+                        'entrada', 'entrada_compra' => 'success',
+                        'salida', 'salida_venta' => 'danger',
                         'ajuste_entrada' => 'info',
                         'ajuste_salida' => 'warning',
                         'merma_novedad' => 'gray',
                         default => 'gray',
                     })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'entrada' => 'Entrada (Carga Inicial)',
+                        'salida' => 'Salida (Ajuste)',
+                        'entrada_compra' => 'Entrada por Compra',
+                        'salida_venta' => 'Salida por Venta',
+                        'ajuste_entrada' => 'Ajuste de Entrada',
+                        'ajuste_salida' => 'Ajuste de Salida',
+                        'merma_novedad' => 'Merma / Novedad',
+                        default => ucfirst($state),
+                    })
                     ->sortable(),
+
+                TextColumn::make('saldo_anterior')
+                    ->label('Saldo Anterior')
+                    ->numeric(4)
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
 
                 TextColumn::make('cantidad')
                     ->label('Cantidad')
@@ -46,6 +62,23 @@ class KardexMovimientosTable
                 TextColumn::make('saldo_despues')
                     ->label('Saldo Después')
                     ->numeric(4)
+                    ->sortable(),
+
+                TextColumn::make('costo_unitario')
+                    ->label('Costo Unitario')
+                    ->money('COP')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+
+                TextColumn::make('costo_total')
+                    ->label('Costo Total')
+                    ->money('COP')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+
+                TextColumn::make('notas')
+                    ->label('Notas')
+                    ->searchable()
                     ->sortable(),
 
                 TextColumn::make('usuario.name')

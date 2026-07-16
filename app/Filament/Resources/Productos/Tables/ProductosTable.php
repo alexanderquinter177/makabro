@@ -49,7 +49,7 @@ class ProductosTable
                     ->label('Unidad')
                     ->sortable(),
 
-                TextColumn::make('precio_unitario')
+                TextColumn::make('precio_compra')
                     ->label('Precio')
                     ->money('COP')
                     ->sortable(),

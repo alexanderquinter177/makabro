@@ -19,19 +19,24 @@ class Producto extends Model
         'categoria_id',
         'codigo',
         'nombre',
-        'tipo', // 'venta', 'subensamble', 'insumo'
+        'tipo',
         'unidad_medida_id',
-        'precio_unitario',
+        'precio_compra',
         'proveedor_habitual',
         'activo',
         'notas',
         'created_by',
         'updated_by',
         'deleted_by',
+        'unidad_compra_id',
+        'factor_conversion',
+        'costo_unitario',
     ];
 
     protected $casts = [
-        'precio_unitario' => 'decimal:2',
+        'precio_compra' => 'decimal:2',
+        'factor_conversion' => 'decimal:4',
+        'costo_unitario' => 'decimal:4',
         'activo' => 'boolean',
         'deleted_at' => 'datetime',
     ];
@@ -48,6 +53,11 @@ class Producto extends Model
     public function unidadMedida(): BelongsTo
     {
         return $this->belongsTo(UnidadMedida::class, 'unidad_medida_id');
+    }
+
+    public function unidadCompra(): BelongsTo
+    {
+        return $this->belongsTo(UnidadMedida::class, 'unidad_compra_id');
     }
 
     // -------------------------------------------------------------------------
@@ -105,19 +115,13 @@ class Producto extends Model
     // Métodos para generar código automático
     // -------------------------------------------------------------------------
 
-    /**
-     * Generar código automático según tipo y categoría
-     */
     public static function generarCodigo(string $tipo, int $categoriaId): string
     {
-        // 1. Obtener el prefijo según el tipo
         $prefijoTipo = self::getPrefijoTipo($tipo);
         
-        // 2. Obtener el código de la categoría
         $categoria = Categoria::find($categoriaId);
         $codigoCategoria = $categoria ? strtoupper(substr($categoria->nombre, 0, 3)) : 'GEN';
         
-        // 3. Obtener el último número consecutivo
         $ultimo = self::where('tipo', $tipo)
                       ->where('categoria_id', $categoriaId)
                       ->orderBy('id', 'desc')
@@ -129,16 +133,11 @@ class Producto extends Model
             $numero = 1;
         }
         
-        // 4. Formatear el número a 3 dígitos
         $numeroFormateado = str_pad($numero, 3, '0', STR_PAD_LEFT);
         
-        // 5. Generar el código completo
         return "{$prefijoTipo}-{$codigoCategoria}-{$numeroFormateado}";
     }
 
-    /**
-     * Obtener el prefijo según el tipo de producto
-     */
     private static function getPrefijoTipo(string $tipo): string
     {
         return match($tipo) {
@@ -149,9 +148,6 @@ class Producto extends Model
         };
     }
 
-    /**
-     * Validar que el código tenga el formato correcto
-     */
     public static function validarCodigo(string $codigo): bool
     {
         return preg_match('/^(VE|SU|IN)-[A-Z]{3}-\d{3}$/', $codigo) === 1;
@@ -166,7 +162,6 @@ class Producto extends Model
         parent::boot();
 
         static::creating(function ($producto) {
-            // Si no se ha asignado un código, generarlo automáticamente
             if (empty($producto->codigo)) {
                 $producto->codigo = self::generarCodigo(
                     $producto->tipo,
@@ -174,10 +169,23 @@ class Producto extends Model
                 );
             }
         });
+
+        // 🔥 CORREGIDO: Calcular costo unitario solo si factor_conversion > 0
+        static::saving(function ($producto) {
+            if ($producto->tipo === 'insumo' && 
+                $producto->precio_compra && 
+                $producto->factor_conversion && 
+                $producto->factor_conversion > 0) {
+                $producto->costo_unitario = $producto->precio_compra / $producto->factor_conversion;
+            } else {
+                // Si no hay factor válido, usar precio_compra como costo unitario
+                $producto->costo_unitario = $producto->precio_compra ?? 0;
+            }
+        });
     }
 
     // -------------------------------------------------------------------------
-    // Métodos existentes
+    // Métodos
     // -------------------------------------------------------------------------
 
     public function esPlato(): bool
@@ -228,12 +236,28 @@ class Producto extends Model
 
     public function calcularCosto(): float
     {
-        $costo = 0;
-
-        foreach ($this->ingredientes as $ingrediente) {
-            $costo += $ingrediente->precio_unitario * $ingrediente->pivot->cantidad;
+        // Si es insumo, usar costo_unitario o precio_compra
+        if ($this->tipo === 'insumo') {
+            return $this->costo_unitario ?? $this->precio_compra ?? 0;
         }
 
-        return $costo;
+        // Si tiene ingredientes, sumar costos
+        if ($this->tieneIngredientes()) {
+            $costo = 0;
+            foreach ($this->ingredientes as $ingrediente) {
+                $costo += $ingrediente->calcularCosto() * $ingrediente->pivot->cantidad;
+            }
+            return $costo;
+        }
+
+        return $this->precio_compra ?? 0;
+    }
+
+    public function getCostoUnitario(): float
+    {
+        if ($this->tipo === 'insumo') {
+            return $this->costo_unitario ?? $this->precio_compra ?? 0;
+        }
+        return $this->calcularCosto();
     }
 }

@@ -121,8 +121,8 @@ class ProductoForm
                                         }
                                     }),
 
-                                Select::make('unidad_medida_id')
-                                    ->label('UNIDAD DE MEDIDA')
+                                Select::make('unidad_compra_id')
+                                    ->label('UNIDAD DE COMPRA')
                                     ->options(UnidadMedida::activos()->pluck('nombre', 'id'))
                                     ->required()
                                     ->searchable()
@@ -132,8 +132,8 @@ class ProductoForm
 
                         Grid::make(['default' => 1, 'sm' => 2, 'md' => 3])
                             ->schema([
-                                TextInput::make('precio_unitario')
-                                    ->label('PRECIO DE VENTA ACTUAL')
+                                TextInput::make('precio_compra')
+                                    ->label(fn ($get) => $get('tipo') === 'insumo' ? 'PRECIO DE COMPRA' : 'PRECIO DE VENTA ACTUAL')
                                     ->default(0)
                                     ->prefix('$')
                                     ->placeholder('0')
@@ -141,7 +141,20 @@ class ProductoForm
                                     ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
                                     ->stripCharacters('.')
                                     ->dehydrateStateUsing(fn ($state) => $state ? floatval(str_replace(['.', ','], ['', '.'], $state)) : 0)
-                                    ->live(onBlur: true),
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function ($set, $get, $state) {
+                                        $tipo = $get('tipo');
+                                        if ($tipo === 'insumo') {
+                                            $precio = floatval(str_replace(['.', ','], ['', '.'], $state ?? 0));
+                                            $factor = floatval($get('factor_conversion') ?? 1);
+                                            if ($factor > 0) {
+                                                $set('costo_unitario', round($precio / $factor, 4));
+                                            } else {
+                                                $set('costo_unitario', $precio);
+                                            }
+                                        }
+                                    })
+                                    ->visible(fn (callable $get) => in_array($get('tipo'), ['venta', 'insumo'])),
 
                                 TextInput::make('proveedor_habitual')
                                     ->label('PROVEEDOR HABITUAL')
@@ -149,7 +162,8 @@ class ProductoForm
                                     ->placeholder('EJ: DISTRIBUIDORA CENTRAL')
                                     ->prefixIcon('heroicon-o-truck')
                                     ->formatStateUsing(fn ($state) => strtoupper($state))
-                                    ->afterStateUpdated(fn ($set, $state) => $set('proveedor_habitual', strtoupper($state))),
+                                    ->afterStateUpdated(fn ($set, $state) => $set('proveedor_habitual', strtoupper($state)))
+                                    ->visible(fn (callable $get) => $get('tipo') === 'insumo'),
 
                                 Toggle::make('activo')
                                     ->label('PRODUCTO ACTIVO')
@@ -158,6 +172,40 @@ class ProductoForm
                                     ->offColor('danger')
                                     ->inline(false)
                                     ->helperText('Habilita o deshabilita en el sistema'),
+                            ]),
+
+                        Grid::make(['default' => 1, 'sm' => 3])
+                            ->visible(fn (callable $get) => $get('tipo') === 'insumo')
+                            ->schema([
+                                Select::make('unidad_medida_id')
+                                    ->label('UNIDAD DE MEDIDA')
+                                    ->options(UnidadMedida::activos()->pluck('nombre', 'id'))
+                                    ->searchable()
+                                    ->placeholder('Seleccione unidad')
+                                    ->prefixIcon('heroicon-o-scale'),
+
+                                TextInput::make('factor_conversion')
+                                    ->label('FACTOR DE CONVERSIÓN')
+                                    ->numeric()
+                                    ->default(1)
+                                    ->live()
+                                    ->afterStateUpdated(function ($set, $get, $state) {
+                                        $precioRaw = $get('precio_compra') ?? 0;
+                                        $precio = floatval(str_replace(['.', ','], ['', '.'], $precioRaw));
+                                        $factor = floatval($state);
+                                        if ($factor > 0) {
+                                            $set('costo_unitario', round($precio / $factor, 4));
+                                        } else {
+                                            $set('costo_unitario', $precio);
+                                        }
+                                    }),
+
+                                TextInput::make('costo_unitario')
+                                    ->label('COSTO UNITARIO DE USO')
+                                    ->disabled()
+                                    ->dehydrated(false)
+                                    ->prefix('$')
+                                    ->placeholder('AUTO-CALCULADO'),
                             ]),
 
                         Textarea::make('notas')
@@ -203,12 +251,12 @@ class ProductoForm
                                                         $unidad = $producto->unidadMedida?->abreviatura ?? 'UND';
                                                         $set('unidad_medida', $unidad);
                                                         
-                                                        $precio = floatval($producto->precio_unitario ?? 0);
-                                                        $set('precio_unitario_ingrediente', number_format($precio, 0, ',', '.'));
+                                                        $costoU = floatval($producto->getCostoUnitario());
+                                                        $set('precio_unitario_ingrediente', number_format($costoU, 2, ',', '.'));
 
                                                         $cantidad = floatval($get('cantidad') ?? 0);
                                                         if ($cantidad > 0) {
-                                                            $total = $precio * $cantidad;
+                                                            $total = $costoU * $cantidad;
                                                             $set('costo_parcial', '$ ' . number_format($total, 0, ',', '.'));
                                                         }
                                                     }
@@ -221,15 +269,34 @@ class ProductoForm
                                             ->dehydrated(false)
                                             ->default('UND')
                                             ->columnSpan(['default' => 4, 'md' => 2])
-                                            ->extraAttributes(['class' => 'bg-gray-100 dark:bg-gray-800 text-center']),
+                                            ->extraAttributes(['class' => 'bg-gray-100 dark:bg-gray-800 text-center'])
+                                            ->afterStateHydrated(function ($set, $get, $state) {
+                                                $productoHijoId = $get('producto_hijo_id');
+                                                if ($productoHijoId) {
+                                                    $producto = Producto::find($productoHijoId);
+                                                    if ($producto) {
+                                                        $set('unidad_medida', $producto->unidadMedida?->abreviatura ?? 'UND');
+                                                    }
+                                                }
+                                            }),
 
                                         TextInput::make('precio_unitario_ingrediente')
-                                            ->label('PRECIO COMPRA')
+                                            ->label('COSTO UNITARIO')
                                             ->disabled()
                                             ->dehydrated(false)
                                             ->default(0)
                                             ->columnSpan(['default' => 8, 'md' => 2])
-                                            ->extraAttributes(['class' => 'bg-gray-100 dark:bg-gray-800']),
+                                            ->extraAttributes(['class' => 'bg-gray-100 dark:bg-gray-800'])
+                                            ->afterStateHydrated(function ($set, $get, $state) {
+                                                $productoHijoId = $get('producto_hijo_id');
+                                                if ($productoHijoId) {
+                                                    $producto = Producto::find($productoHijoId);
+                                                    if ($producto) {
+                                                        $costoU = floatval($producto->getCostoUnitario());
+                                                        $set('precio_unitario_ingrediente', number_format($costoU, 2, ',', '.'));
+                                                    }
+                                                }
+                                            }),
 
                                         TextInput::make('cantidad')
                                             ->label('CANTIDAD')
@@ -242,8 +309,9 @@ class ProductoForm
                                             ->columnSpan(['default' => 6, 'md' => 2])
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(function ($state, $set, $get) {
-                                                $precioRaw = str_replace('.', '', $get('precio_unitario_ingrediente') ?? '0');
-                                                $precio = floatval($precioRaw);
+                                                $precioRaw = $get('precio_unitario_ingrediente') ?? '0';
+                                                $precioClean = str_replace(['.', ','], ['', '.'], $precioRaw);
+                                                $precio = floatval($precioClean);
                                                 $cantidad = floatval($state) ?? 0;
                                                 $total = $precio * $cantidad;
                                                 $set('costo_parcial', '$ ' . number_format($total, 0, ',', '.'));
@@ -255,7 +323,19 @@ class ProductoForm
                                             ->dehydrated(false)
                                             ->default(0)
                                             ->columnSpan(['default' => 6, 'md' => 2])
-                                            ->extraAttributes(['class' => 'bg-gray-100 dark:bg-gray-800 font-bold']),
+                                            ->extraAttributes(['class' => 'bg-gray-100 dark:bg-gray-800 font-bold'])
+                                            ->afterStateHydrated(function ($set, $get, $state) {
+                                                $productoHijoId = $get('producto_hijo_id');
+                                                if ($productoHijoId) {
+                                                    $producto = Producto::find($productoHijoId);
+                                                    if ($producto) {
+                                                        $costoU = floatval($producto->getCostoUnitario());
+                                                        $cantidad = floatval($get('cantidad') ?? 0);
+                                                        $total = $costoU * $cantidad;
+                                                        $set('costo_parcial', '$ ' . number_format($total, 0, ',', '.'));
+                                                    }
+                                                }
+                                            }),
 
                                         TextInput::make('nota')
                                             ->label('NOTAS / INSTRUCCIÓN')
@@ -301,7 +381,7 @@ class ProductoForm
                                     }
                                 }
 
-                                $precioVenta = floatval(str_replace(['$', ',', '.'], '', $get('precio_unitario') ?? '0'));
+                                $precioVenta = floatval(str_replace(['$', ',', '.'], '', $get('precio_compra') ?? '0'));
                                 $porcentajeCosto = $precioVenta > 0 ? ($totalCosto / $precioVenta) * 100 : 0;
                                 $beneficio = $precioVenta - $totalCosto;
 
@@ -700,7 +780,7 @@ class ProductoForm
                                     $html .= '            <th style="text-align: left;">Insumo</th>';
                                     $html .= '            <th style="text-align: right;">Cantidad</th>';
                                     $html .= '            <th style="text-align: center;">Unidad</th>';
-                                    $html .= '            <th style="text-align: right;">Precio Compra</th>';
+                                    $html .= '            <th style="text-align: right;">Costo Unitario</th>';
                                     $html .= '            <th style="text-align: right;">Costo Producción</th>';
                                     $html .= '            <th style="text-align: right; width: 22%;">Peso del Costo</th>';
                                     $html .= '          </tr>';
@@ -724,7 +804,12 @@ class ProductoForm
                                         $html .= '          </td>';
                                         $html .= '          <td style="text-align: right; font-weight: 600; color: #71717a;">' . number_format(floatval($componente['cantidad'] ?? 0), 3, ',', '.') . '</td>';
                                         $html .= '          <td style="text-align: center; font-weight: 800; color: #a1a1aa;">' . strtoupper($componente['unidad_medida'] ?? 'UND') . '</td>';
-                                        $html .= '          <td style="text-align: right; color: #71717a;">$ ' . number_format(floatval(str_replace(['.', ','], '', $componente['precio_unitario_ingrediente'] ?? '0')), 0, ',', '.') . '</td>';
+                                        
+                                        $precioIngredienteRaw = $componente['precio_unitario_ingrediente'] ?? '0';
+                                        $precioIngredienteClean = str_replace(['.', ','], ['', '.'], $precioIngredienteRaw);
+                                        $precioIngrediente = floatval($precioIngredienteClean);
+                                        $html .= '          <td style="text-align: right; color: #71717a;">$ ' . number_format($precioIngrediente, 2, ',', '.') . '</td>';
+                                        
                                         $html .= '          <td style="text-align: right; font-weight: 700; color: var(--gray-900, #18181b);">$ ' . number_format($costoItem, 0, ',', '.') . '</td>';
                                         
                                         // Visualización dinámica de porcentaje con barra estilizada
