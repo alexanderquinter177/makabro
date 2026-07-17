@@ -11,6 +11,9 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use App\Models\Catalog\Categoria;
+use App\Models\Catalog\Producto;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 
 class ProductosTable
 {
@@ -84,6 +87,30 @@ class ProductosTable
                         '1' => 'Activos',
                         '0' => 'Inactivos',
                     ]),
+            ])
+            ->headerActions([
+                Action::make('calcularCostosSubrecetas')
+                    ->label('Calcular Costos Subrecetas')
+                    ->icon('heroicon-o-calculator')
+                    ->color('warning')
+                    ->visible(fn () => auth()->user()?->hasRole('super_admin') || auth()->user()?->hasRole('admin'))
+                    ->action(function () {
+                        $subrecetas = Producto::where('tipo', 'subensamble')->get();
+                        
+                        $count = 0;
+                        foreach ($subrecetas as $subreceta) {
+                            $costoCalculado = $subreceta->calcularCosto();
+                            $subreceta->precio_compra = $costoCalculado;
+                            $subreceta->save();
+                            $count++;
+                        }
+                        
+                        Notification::make()
+                            ->title('Costo de Subrecetas Calculado')
+                            ->body("Se recalcularon y actualizaron los costos de {$count} subrecetas.")
+                            ->success()
+                            ->send();
+                    })
             ])
             ->recordActions([
                 ViewAction::make(),
