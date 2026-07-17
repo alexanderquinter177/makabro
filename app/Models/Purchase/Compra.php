@@ -188,7 +188,7 @@ class Compra extends Model
             KardexMovimiento::create([
                 'sede_id' => $this->sede_id,
                 'producto_id' => $item->producto_id,
-                'tipo_movimiento' => 'entrada',
+                'tipo_movimiento' => 'entrada_compra',
                 'cantidad' => $item->cantidad,
                 'saldo_anterior' => $saldoAnterior,
                 'saldo_despues' => $saldoNuevo,

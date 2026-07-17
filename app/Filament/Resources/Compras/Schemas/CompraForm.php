@@ -161,7 +161,7 @@ class CompraForm
                         Repeater::make('items')
                             ->relationship('items')
                             ->schema([
-                                Grid::make(5)
+                                Grid::make(12)
                                     ->schema([
                                         Select::make('producto_id')
                                             ->label('Producto')
@@ -170,18 +170,49 @@ class CompraForm
                                             ->searchable()
                                             ->placeholder('Seleccione el producto')
                                             ->prefixIcon('heroicon-o-cube')
-                                            ->columnSpan(2)
+                                            ->columnSpan(5)
+                                            ->reactive()
                                             ->createOptionForm([
                                                 TextInput::make('nombre')->label('Nombre')->required(),
-                                                Select::make('unidad_medida_id')
-                                                    ->label('Unidad')
-                                                    ->relationship('unidadMedida', 'nombre')
+                                                Select::make('unidad_compra_id')
+                                                    ->label('Unidad de Compra')
+                                                    ->relationship('unidadCompra', 'nombre')
                                                     ->required(),
                                                 TextInput::make('precio_compra')
                                                     ->label('Precio Compra')
                                                     ->numeric()
                                                     ->required(),
-                                            ]),
+                                            ])
+                                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                                if ($state) {
+                                                    $producto = Producto::find($state);
+                                                    if ($producto) {
+                                                        $precio = $producto->precio_compra ?? 0;
+                                                        $set('precio_unitario', $precio);
+                                                        $set('unidad_compra', $producto->unidadCompra?->abreviatura ?? '---');
+                                                        
+                                                        $cantidad = floatval($get('cantidad') ?? 0);
+                                                        $set('total', round($cantidad * $precio, 2));
+                                                    }
+                                                }
+                                            }),
+
+                                        TextInput::make('unidad_compra')
+                                            ->label('U.M.')
+                                            ->disabled()
+                                            ->dehydrated(false)
+                                            ->placeholder('---')
+                                            ->columnSpan(1)
+                                            ->extraAttributes(['class' => 'bg-gray-100 dark:bg-gray-800 text-center font-bold'])
+                                            ->afterStateHydrated(function ($set, $get, $state) {
+                                                $productoId = $get('producto_id');
+                                                if ($productoId) {
+                                                    $producto = Producto::find($productoId);
+                                                    if ($producto) {
+                                                        $set('unidad_compra', $producto->unidadCompra?->abreviatura ?? '---');
+                                                    }
+                                                }
+                                            }),
 
                                         TextInput::make('cantidad')
                                             ->label('Cantidad')
@@ -192,6 +223,7 @@ class CompraForm
                                             ->live(onBlur: true)
                                             ->placeholder('0')
                                             ->prefixIcon('heroicon-o-calculator')
+                                            ->columnSpan(2)
                                             ->afterStateUpdated(fn ($state, callable $set, callable $get) =>
                                                 $set('total', round(floatval($state) * floatval($get('precio_unitario') ?? 0), 2))
                                             ),
@@ -205,6 +237,7 @@ class CompraForm
                                             ->live(onBlur: true)
                                             ->prefix('$')
                                             ->placeholder('0.00')
+                                            ->columnSpan(2)
                                             ->afterStateUpdated(fn ($state, callable $set, callable $get) =>
                                                 $set('total', round(floatval($state) * floatval($get('cantidad') ?? 0), 2))
                                             ),
@@ -215,7 +248,8 @@ class CompraForm
                                             ->required()
                                             ->readOnly()
                                             ->prefix('$')
-                                            ->placeholder('0.00'),
+                                            ->placeholder('0.00')
+                                            ->columnSpan(2),
                                     ])
                                     ->columnSpanFull(),
                             ])

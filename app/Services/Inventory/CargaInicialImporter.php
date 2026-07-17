@@ -394,7 +394,7 @@ class CargaInicialImporter
 
         $costoUnitario = !empty($datos['costo_unitario']) 
             ? floatval($datos['costo_unitario']) 
-            : ($producto->costo_unitario ?? $producto->precio_compra ?? 0);
+            : ($producto->precio_compra ?? 0);
 
         if ($costoUnitario == 0) {
             $costoUnitario = $this->cache['ultimos_costos'][$producto->id] ?? 0;

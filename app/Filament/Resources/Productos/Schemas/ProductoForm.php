@@ -142,18 +142,6 @@ class ProductoForm
                                     ->stripCharacters('.')
                                     ->dehydrateStateUsing(fn ($state) => $state ? floatval(str_replace(['.', ','], ['', '.'], $state)) : 0)
                                     ->live(onBlur: true)
-                                    ->afterStateUpdated(function ($set, $get, $state) {
-                                        $tipo = $get('tipo');
-                                        if ($tipo === 'insumo') {
-                                            $precio = floatval(str_replace(['.', ','], ['', '.'], $state ?? 0));
-                                            $factor = floatval($get('factor_conversion') ?? 1);
-                                            if ($factor > 0) {
-                                                $set('costo_unitario', round($precio / $factor, 4));
-                                            } else {
-                                                $set('costo_unitario', $precio);
-                                            }
-                                        }
-                                    })
                                     ->visible(fn (callable $get) => in_array($get('tipo'), ['venta', 'insumo'])),
 
                                 TextInput::make('proveedor_habitual')
@@ -174,39 +162,7 @@ class ProductoForm
                                     ->helperText('Habilita o deshabilita en el sistema'),
                             ]),
 
-                        Grid::make(['default' => 1, 'sm' => 3])
-                            ->visible(fn (callable $get) => $get('tipo') === 'insumo')
-                            ->schema([
-                                Select::make('unidad_medida_id')
-                                    ->label('UNIDAD DE MEDIDA')
-                                    ->options(UnidadMedida::activos()->pluck('nombre', 'id'))
-                                    ->searchable()
-                                    ->placeholder('Seleccione unidad')
-                                    ->prefixIcon('heroicon-o-scale'),
 
-                                TextInput::make('factor_conversion')
-                                    ->label('FACTOR DE CONVERSIÓN')
-                                    ->numeric()
-                                    ->default(1)
-                                    ->live()
-                                    ->afterStateUpdated(function ($set, $get, $state) {
-                                        $precioRaw = $get('precio_compra') ?? 0;
-                                        $precio = floatval(str_replace(['.', ','], ['', '.'], $precioRaw));
-                                        $factor = floatval($state);
-                                        if ($factor > 0) {
-                                            $set('costo_unitario', round($precio / $factor, 4));
-                                        } else {
-                                            $set('costo_unitario', $precio);
-                                        }
-                                    }),
-
-                                TextInput::make('costo_unitario')
-                                    ->label('COSTO UNITARIO DE USO')
-                                    ->disabled()
-                                    ->dehydrated(false)
-                                    ->prefix('$')
-                                    ->placeholder('AUTO-CALCULADO'),
-                            ]),
 
                         Textarea::make('notas')
                             ->label('NOTAS Y OBSERVACIONES')
@@ -246,9 +202,9 @@ class ProductoForm
                                             ->reactive()
                                             ->afterStateUpdated(function ($state, $set, $get) {
                                                 if ($state) {
-                                                    $producto = Producto::with('unidadMedida')->find($state);
+                                                    $producto = Producto::with('unidadCompra')->find($state);
                                                     if ($producto) {
-                                                        $unidad = $producto->unidadMedida?->abreviatura ?? 'UND';
+                                                        $unidad = $producto->unidadCompra?->abreviatura ?? 'UND';
                                                         $set('unidad_medida', $unidad);
                                                         
                                                         $costoU = floatval($producto->getCostoUnitario());
@@ -275,7 +231,7 @@ class ProductoForm
                                                 if ($productoHijoId) {
                                                     $producto = Producto::find($productoHijoId);
                                                     if ($producto) {
-                                                        $set('unidad_medida', $producto->unidadMedida?->abreviatura ?? 'UND');
+                                                        $set('unidad_medida', $producto->unidadCompra?->abreviatura ?? 'UND');
                                                     }
                                                 }
                                             }),

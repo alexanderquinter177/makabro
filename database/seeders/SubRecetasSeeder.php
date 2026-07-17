@@ -201,8 +201,6 @@ class SubRecetasSeeder extends Seeder
                 'unidad_uso_id' => $unidad->id,
                 'precio_compra' => 0,
                 'unidad_compra_id' => null,
-                'factor_conversion' => null,
-                'costo_unitario' => null,
                 'activo' => true,
                 'proveedor_habitual' => null,
                 'notas' => $recetaData['notas'] ?? "Rendimiento: {$recetaData['rendimiento']} {$recetaData['unidad_rendimiento']}",

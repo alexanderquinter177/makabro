@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             UsersSeeder::class,
             UnidadesMedidaSeeder::class,
             CategoriasSeeder::class,
+            ProductosSeeder::class,
+           
         ]);
         
         if (DB::connection()->getDriverName() === 'pgsql') {

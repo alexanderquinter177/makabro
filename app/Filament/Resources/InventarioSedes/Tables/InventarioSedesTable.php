@@ -30,6 +30,10 @@ class InventarioSedesTable
                     ->searchable()
                     ->sortable(),
 
+                TextColumn::make('producto.unidadMedida.nombre')
+                    ->label('Unidad')
+                    ->sortable(),
+
                 TextColumn::make('cantidad_actual')
                     ->label('Cantidad Actual')
                     ->numeric()

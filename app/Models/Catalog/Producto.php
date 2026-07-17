@@ -19,8 +19,7 @@ class Producto extends Model
         'categoria_id',
         'codigo',
         'nombre',
-        'tipo',
-        'unidad_medida_id',
+        'tipo',      
         'precio_compra',
         'proveedor_habitual',
         'activo',
@@ -29,14 +28,10 @@ class Producto extends Model
         'updated_by',
         'deleted_by',
         'unidad_compra_id',
-        'factor_conversion',
-        'costo_unitario',
     ];
 
     protected $casts = [
         'precio_compra' => 'decimal:2',
-        'factor_conversion' => 'decimal:4',
-        'costo_unitario' => 'decimal:4',
         'activo' => 'boolean',
         'deleted_at' => 'datetime',
     ];
@@ -50,10 +45,6 @@ class Producto extends Model
         return $this->belongsTo(Categoria::class);
     }
 
-    public function unidadMedida(): BelongsTo
-    {
-        return $this->belongsTo(UnidadMedida::class, 'unidad_medida_id');
-    }
 
     public function unidadCompra(): BelongsTo
     {
@@ -170,18 +161,50 @@ class Producto extends Model
             }
         });
 
-        // 🔥 CORREGIDO: Calcular costo unitario solo si factor_conversion > 0
         static::saving(function ($producto) {
-            if ($producto->tipo === 'insumo' && 
-                $producto->precio_compra && 
-                $producto->factor_conversion && 
-                $producto->factor_conversion > 0) {
-                $producto->costo_unitario = $producto->precio_compra / $producto->factor_conversion;
-            } else {
-                // Si no hay factor válido, usar precio_compra como costo unitario
-                $producto->costo_unitario = $producto->precio_compra ?? 0;
+            if ($producto->unidad_compra_id) {
+                $unidad = \App\Models\Catalog\UnidadMedida::find($producto->unidad_compra_id);
+                if ($unidad) {
+                    $abv = strtolower($unidad->abreviatura);
+                    if ($abv === 'kg') {
+                        $unidadGr = \App\Models\Catalog\UnidadMedida::where('abreviatura', 'gr')->first();
+                        if ($unidadGr) {
+                            $producto->unidad_compra_id = $unidadGr->id;
+                            $producto->precio_compra = ($producto->precio_compra ?? 0) / 1000;
+                            
+                            \Filament\Notifications\Notification::make()
+                                ->title('Conversión de Kilogramos a Gramos')
+                                ->body("El producto '{$producto->nombre}' se convirtió automáticamente a Gramos (gr) y el precio se dividió por 1000.")
+                                ->success()
+                                ->send();
+                        }
+                    } elseif ($abv === 'lt') {
+                        $unidadMl = \App\Models\Catalog\UnidadMedida::where('abreviatura', 'ml')->first();
+                        if ($unidadMl) {
+                            $producto->unidad_compra_id = $unidadMl->id;
+                            $producto->precio_compra = ($producto->precio_compra ?? 0) / 1000;
+                            
+                            \Filament\Notifications\Notification::make()
+                                ->title('Conversión de Litros a Mililitros')
+                                ->body("El producto '{$producto->nombre}' se convirtió automáticamente a Mililitros (ml) y el precio se dividió por 1000.")
+                                ->success()
+                                ->send();
+                        }
+                    } elseif ($abv === 'gr' || $abv === 'ml') {
+                        // Ya está en unidad base de uso, no requiere conversión
+                    } else {
+                        // Unidad no convertible como 'und' (Unidades)
+                        \Filament\Notifications\Notification::make()
+                            ->title('Unidad no convertible')
+                            ->body("La unidad '{$unidad->nombre}' es por unidad, no es convertible a gramos.")
+                            ->info()
+                            ->send();
+                    }
+                }
             }
         });
+
+
     }
 
     // -------------------------------------------------------------------------
@@ -236,9 +259,9 @@ class Producto extends Model
 
     public function calcularCosto(): float
     {
-        // Si es insumo, usar costo_unitario o precio_compra
+        // Si es insumo, usar precio_compra
         if ($this->tipo === 'insumo') {
-            return $this->costo_unitario ?? $this->precio_compra ?? 0;
+            return $this->precio_compra ?? 0;
         }
 
         // Si tiene ingredientes, sumar costos
@@ -256,7 +279,7 @@ class Producto extends Model
     public function getCostoUnitario(): float
     {
         if ($this->tipo === 'insumo') {
-            return $this->costo_unitario ?? $this->precio_compra ?? 0;
+            return $this->precio_compra ?? 0;
         }
         return $this->calcularCosto();
     }

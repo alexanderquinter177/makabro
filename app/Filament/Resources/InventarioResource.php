@@ -18,6 +18,8 @@ class InventarioResource extends Resource
 {
     protected static ?string $model = Inventario::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Inventario y Movimientos';
