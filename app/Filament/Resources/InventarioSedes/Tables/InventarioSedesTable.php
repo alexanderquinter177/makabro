@@ -30,7 +30,7 @@ class InventarioSedesTable
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('producto.unidadMedida.nombre')
+                TextColumn::make('producto.unidadCompra.nombre')
                     ->label('Unidad')
                     ->sortable(),
 

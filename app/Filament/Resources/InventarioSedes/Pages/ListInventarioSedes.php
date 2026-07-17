@@ -40,7 +40,7 @@ class ListInventarioSedes extends ListRecords
                         fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
                         
                         // Cabeceras en MAYÚSCULAS
-                        fputcsv($output, ['PRODUCTO_ID', 'CODIGO', 'NOMBRE', 'CANTIDAD_INICIAL', 'STOCK_MINIMO', 'STOCK_MAXIMO'], ';');
+                        fputcsv($output, ['PRODUCTO_ID', 'CODIGO', 'NOMBRE', 'UNIDAD_MEDIDA', 'CANTIDAD_INICIAL', 'STOCK_MINIMO', 'STOCK_MAXIMO'], ';');
                         
                         // 1. Cargar en memoria todos los stocks de la sede de una sola vez
                         $stocksMap = InventarioSede::where('sede_id', $sedeId)
@@ -62,11 +62,13 @@ class ListInventarioSedes extends ListRecords
                                     $cantidad = $stock ? floatval($stock->cantidad_actual) : 0;
                                     $minimo = $stock ? floatval($stock->stock_minimo) : 0;
                                     $maximo = $stock ? floatval($stock->stock_maximo) : 0;
+                                    $unidad = $insumo->unidadCompra ? $insumo->unidadCompra->abreviatura : '---';
 
                                     fputcsv($output, [
                                         $insumo->id,
                                         strtoupper($insumo->codigo),
                                         strtoupper($insumo->nombre),
+                                        strtoupper($unidad),
                                         $cantidad,
                                         $minimo,
                                         $maximo

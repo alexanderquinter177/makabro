@@ -136,10 +136,11 @@ class ProductoForm
                                     ->label(fn ($get) => $get('tipo') === 'insumo' ? 'PRECIO DE COMPRA' : 'PRECIO DE VENTA ACTUAL')
                                     ->default(0)
                                     ->prefix('$')
-                                    ->placeholder('0')
+                                    ->placeholder('0,00')
                                     ->prefixIcon('heroicon-o-currency-dollar')
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 0)'))
+                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
                                     ->stripCharacters('.')
+                                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 2, ',', '.') : '')
                                     ->dehydrateStateUsing(fn ($state) => $state ? floatval(str_replace(['.', ','], ['', '.'], $state)) : 0)
                                     ->live(onBlur: true)
                                     ->visible(fn (callable $get) => in_array($get('tipo'), ['venta', 'insumo'])),

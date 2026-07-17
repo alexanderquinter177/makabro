@@ -88,12 +88,14 @@ class ProductosSeeder extends Seeder
             return 0;
         }
 
-        // Si es string, limpiar
         if (is_string($precio)) {
-            // Eliminar $, espacios, y convertir coma a punto
-            $precio = str_replace(['$', ' ', '.', ','], '', $precio);
-            // Reemplazar coma decimal por punto
-            $precio = str_replace(',', '.', $precio);
+            $precio = str_replace(['$', ' '], '', $precio);
+            
+            if (str_contains($precio, ',') && str_contains($precio, '.')) {
+                $precio = str_replace(',', '', $precio);
+            } elseif (str_contains($precio, ',')) {
+                $precio = str_replace(',', '.', $precio);
+            }
         }
 
         return floatval($precio);

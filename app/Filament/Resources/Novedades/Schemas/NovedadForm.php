@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Novedades\Schemas;
 
 use Filament\Schemas\Schema;
+use Filament\Support\RawJs;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -26,16 +27,21 @@ class NovedadForm
                             ->schema([
                                 Select::make('sede_id')
                                     ->label('Sede')
-                                    ->options(Sede::pluck('nombre', 'id'))
+                                    ->options(Sede::where('activo', true)->pluck('nombre', 'id'))
                                     ->required()
                                     ->searchable()
-                                    ->placeholder('Seleccione la sede'),
+                                    ->placeholder('Seleccione la sede')
+                                    ->disabled(true)
+                                    ->dehydrated()
+                                    ->default(fn () => session('sede_id')),
 
                                 Select::make('usuario_id')
                                     ->label('Registrado por')
-                                    ->options(User::pluck('name', 'id'))
+                                    ->options(User::where('activo', true)->pluck('name', 'id'))
                                     ->required()
                                     ->searchable()
+                                    ->disabled(true)
+                                    ->dehydrated()
                                     ->default(fn () => auth()->id())
                                     ->placeholder('Seleccione el usuario'),
 
@@ -88,20 +94,51 @@ class NovedadForm
                             ->schema([
                                 Select::make('producto_id')
                                     ->label('Producto Relacionado')
-                                    ->options(Producto::pluck('nombre', 'id'))
+                                    ->options(Producto::where('activo', true)->pluck('nombre', 'id'))
                                     ->searchable()
-                                    ->placeholder('Seleccione el producto (si aplica)'),
+                                    ->placeholder('Seleccione el producto (si aplica)')
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        if ($state) {
+                                            $producto = Producto::find($state);
+                                            if ($producto) {
+                                                $precio = floatval($producto->precio_compra ?? 0);
+                                                $cantidad = floatval($get('cantidad') ?? 0);
+                                                $costo = round($cantidad * $precio, 2);
+                                                $set('valor_costo', $costo);
+                                                $set('valor_cobro', $costo);
+                                            }
+                                        }
+                                    }),
 
                                 TextInput::make('cantidad')
                                     ->label('Cantidad')
                                     ->numeric()
-                                    ->placeholder('0.00'),
+                                    ->placeholder('0.00')
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        $productoId = $get('producto_id');
+                                        if ($productoId) {
+                                            $producto = Producto::find($productoId);
+                                            if ($producto) {
+                                                $precio = floatval($producto->precio_compra ?? 0);
+                                                $cantidad = floatval($state ?? 0);
+                                                $costo = round($cantidad * $precio, 2);
+                                                $set('valor_costo', $costo);
+                                                $set('valor_cobro', $costo);
+                                            }
+                                        }
+                                    }),
 
                                 TextInput::make('valor_costo')
                                     ->label('Valor Costo')
-                                    ->numeric()
+                                    ->required()
                                     ->prefix('$')
-                                    ->placeholder('0.00'),
+                                    ->placeholder('0')
+                                    ->readOnly()
+                                    ->mask(RawJs::make('$money($input, ",", ".", 0)'))
+                                    ->stripCharacters('.')
+                                    ->validationAttribute('Valor Costo'),
                             ])
                             ->columnSpanFull(),
 
@@ -110,9 +147,12 @@ class NovedadForm
                             ->schema([
                                 TextInput::make('valor_cobro')
                                     ->label('Valor Cobro')
-                                    ->numeric()
+                                    ->required()
                                     ->prefix('$')
-                                    ->placeholder('0.00')
+                                    ->placeholder('0')
+                                    ->mask(RawJs::make('$money($input, ",", ".", 0)'))
+                                    ->stripCharacters('.')
+                                    ->validationAttribute('Valor Cobro')
                                     ->helperText('Monto a cobrar al empleado (si aplica)'),
 
                                 Select::make('estado_cobro')

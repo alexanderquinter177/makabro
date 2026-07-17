@@ -25,6 +25,10 @@ class KardexMovimientosTable
                     ->searchable()
                     ->sortable(),
 
+                TextColumn::make('producto.unidadCompra.nombre')
+                    ->label('Unidad')
+                    ->sortable(),
+
                 TextColumn::make('tipo_movimiento')
                     ->label('Tipo de Movimiento')
                     ->badge()

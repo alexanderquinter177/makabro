@@ -2,259 +2,220 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use App\Models\Catalog\Producto;
 use App\Models\Catalog\Categoria;
-use App\Models\Catalog\UnidadMedida;
 use Illuminate\Support\Str;
 
 class SubRecetasSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // 1. Buscar o crear la categoría "Sub recetas"
-        $categoriaSubRecetas = Categoria::firstOrCreate(
-            ['nombre' => 'Sub recetas'],
+        $this->command->info('📦 Cargando Subrecetas...');
+
+        // Obtener una categoría para las subrecetas
+        $categoriaSubrecetas = Categoria::firstOrCreate(
+            ['nombre' => 'Subrecetas'],
             [
-                'slug' => Str::slug('Sub recetas'),
+                'nombre' => 'Subrecetas',
+                'slug' => Str::slug('Subrecetas'), // 👈 AGREGAR SLUG
+                'descripcion' => 'Subrecetas para preparación de platos',
                 'activo' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]
         );
 
-        // 2. Buscar unidades de medida
-        $unidadGr = UnidadMedida::where('abreviatura', 'gr')->first();
-        $unidadMl = UnidadMedida::where('abreviatura', 'ml')->first();
-        $unidadUnd = UnidadMedida::where('abreviatura', 'und')->first();
+        $this->command->info("📂 Usando categoría: '{$categoriaSubrecetas->nombre}' (ID: {$categoriaSubrecetas->id})");
 
-        if (!$unidadGr) {
-            $this->command->error('❌ Unidad "gr" no encontrada.');
-            return;
-        }
+        // ========================================
+        // 1. SUB SALSA HAMBURGUESERA
+        // ========================================
+        $this->crearSubreceta('SUB SALSA HAMBURGUESERA', $categoriaSubrecetas->id, [
+            ['nombre' => 'Mayonesa', 'cantidad' => 500],
+            ['nombre' => 'Aderezo bbq', 'cantidad' => 50],
+            ['nombre' => 'Vinagre blanco', 'cantidad' => 20],
+            ['nombre' => 'Rend zumo de limón', 'cantidad' => 20],
+            ['nombre' => 'Paprika', 'cantidad' => 2],
+            ['nombre' => 'Salsa de humo', 'cantidad' => 4],
+            ['nombre' => 'Salsa inglesa', 'cantidad' => 30],
+            ['nombre' => 'Mostaza', 'cantidad' => 50],
+            ['nombre' => 'Sub pepinillo encurtido', 'cantidad' => 20],
+            ['nombre' => 'Azucar blanca', 'cantidad' => 12],
+        ]);
 
-        // 3. Definir todas las sub-recetas
-        $subRecetas = [
-            // 1. SUB SALSA HAMBURGUESERA
-            [
-                'nombre' => 'SUB SALSA HAMBURGUESERA',
-                'rendimiento' => 708,
-                'unidad_rendimiento' => 'gr',
-                'notas' => 'Salsa clásica para hamburguesas',
-                'ingredientes' => [
-                    ['nombre' => 'Mayonesa', 'cantidad' => 500],
-                    ['nombre' => 'Aderezo bbq', 'cantidad' => 50],
-                    ['nombre' => 'Vinagre blanco', 'cantidad' => 20],
-                    ['nombre' => 'Zumo de limón', 'cantidad' => 20],
-                    ['nombre' => 'Paprika', 'cantidad' => 2],
-                    ['nombre' => 'Salsa de humo', 'cantidad' => 4],
-                    ['nombre' => 'Salsa inglesa', 'cantidad' => 30],
-                    ['nombre' => 'Mostaza', 'cantidad' => 50],
-                    ['nombre' => 'Sub pepinillo encurtido', 'cantidad' => 20],
-                    ['nombre' => 'Azucar Blanca', 'cantidad' => 12],
-                ]
-            ],
-            // 2. SUB MAYOCILANTRO
-            [
-                'nombre' => 'SUB MAYOCILANTRO',
-                'rendimiento' => 775.5,
-                'unidad_rendimiento' => 'gr',
-                'notas' => 'Mayonesa con cilantro',
-                'ingredientes' => [
-                    ['nombre' => 'Mayonesa', 'cantidad' => 500],
-                    ['nombre' => 'Ajo Pelado', 'cantidad' => 40],
-                    ['nombre' => 'Cilantro', 'cantidad' => 70],
-                    ['nombre' => 'Zumo de limón', 'cantidad' => 30],
-                    ['nombre' => 'Pimienta Negra', 'cantidad' => 0.5],
-                    ['nombre' => 'Sal Común', 'cantidad' => 5],
-                    ['nombre' => 'Azucar Blanca', 'cantidad' => 100],
-                    ['nombre' => 'Vinagre blanco', 'cantidad' => 30],
-                ]
-            ],
-            // 3. SUB MAYOCEBOLLA DULCE
-            [
-                'nombre' => 'SUB MAYOCEBOLLA DULCE',
-                'rendimiento' => 820,
-                'unidad_rendimiento' => 'gr',
-                'notas' => 'Mayonesa con cebolla caramelizada',
-                'ingredientes' => [
-                    ['nombre' => 'Mayonesa', 'cantidad' => 500],
-                    ['nombre' => 'Sub cebolla caramelizada', 'cantidad' => 200],
-                    ['nombre' => 'Zumo de limón', 'cantidad' => 30],
-                    ['nombre' => 'Mostaza', 'cantidad' => 40],
-                    ['nombre' => 'Sal Común', 'cantidad' => 10],
-                    ['nombre' => 'Miel', 'cantidad' => 30],
-                    ['nombre' => 'Paprika', 'cantidad' => 10],
-                    ['nombre' => 'Salsa de humo', 'cantidad' => 30],
-                ]
-            ],
-            // 4. SUB CEBOLLA CARAMELIZADA
-            [
-                'nombre' => 'SUB CEBOLLA CARAMELIZADA',
-                'rendimiento' => 601,
-                'unidad_rendimiento' => 'gr',
-                'notas' => 'Cebolla caramelizada',
-                'ingredientes' => [
-                    ['nombre' => 'Cebolla Blanca', 'cantidad' => 500],
-                    ['nombre' => 'Azucar morena', 'cantidad' => 50],
-                    ['nombre' => 'Salsa inglesa', 'cantidad' => 30],
-                    ['nombre' => 'Mantequilla', 'cantidad' => 20],
-                    ['nombre' => 'Tres Cordillera', 'cantidad' => 1],
-                ]
-            ],
-            // 5. SUB BBQ DE TAMARINDO Y RON
-            [
-                'nombre' => 'SUB BBQ DE TAMARINDO Y RON',
-                'rendimiento' => 2100,
-                'unidad_rendimiento' => 'gr',
-                'notas' => 'Salsa BBQ con tamarindo y ron',
-                'ingredientes' => [
-                    ['nombre' => 'Aderezo bbq', 'cantidad' => 1000],
-                    ['nombre' => 'Zumo de Naranja', 'cantidad' => 200],
-                    ['nombre' => 'Azucar Blanca', 'cantidad' => 300],
-                    ['nombre' => 'Ron Cortez Oro', 'cantidad' => 100],
-                    ['nombre' => 'Agua', 'cantidad' => 1000],
-                    ['nombre' => 'Tamarindo', 'cantidad' => 500],
-                ]
-            ],
-            // 6. SUB CARNE DE HAMBURGUESA
-            [
-                'nombre' => 'SUB CARNE DE HAMBURGUESA',
-                'rendimiento' => 1086,
-                'unidad_rendimiento' => 'gr',
-                'notas' => 'Mezcla para hamburguesas',
-                'ingredientes' => [
-                    ['nombre' => 'Morrillo', 'cantidad' => 400],
-                    ['nombre' => 'Pecho De Res', 'cantidad' => 600],
-                    ['nombre' => 'Salsa inglesa', 'cantidad' => 20],
-                    ['nombre' => 'Sal Común', 'cantidad' => 10],
-                    ['nombre' => 'Mostaza', 'cantidad' => 20],
-                    ['nombre' => 'Pasta De Ajo Aderezo', 'cantidad' => 15],
-                    ['nombre' => 'Pimienta Negra', 'cantidad' => 1],
-                ]
-            ],
-            // 7. SUB HARINA COMPUESTA
-            [
-                'nombre' => 'SUB HARINA COMPUESTA',
-                'rendimiento' => 570,
-                'unidad_rendimiento' => 'gr',
-                'notas' => 'Mezcla de harina para empanizar',
-                'ingredientes' => [
-                    ['nombre' => 'Harina de trigo', 'cantidad' => 500],
-                    ['nombre' => 'Sal Común', 'cantidad' => 20],
-                    ['nombre' => 'Paprika', 'cantidad' => 20],
-                    ['nombre' => 'Cebolla En Polvo', 'cantidad' => 10],
-                    ['nombre' => 'Ajo En Polvo', 'cantidad' => 10],
-                    ['nombre' => 'Pimienta Negra', 'cantidad' => 5],
-                    ['nombre' => 'Sazon Completo Badia', 'cantidad' => 5],
-                ]
-            ],
-            // 8. SUB CHUTNEY DE MANGO
-            [
-                'nombre' => 'SUB CHUTNEY DE MANGO',
-                'rendimiento' => 810,
-                'unidad_rendimiento' => 'gr',
-                'notas' => 'Chutney de mango agridulce',
-                'ingredientes' => [
-                    ['nombre' => 'Mango Tommy', 'cantidad' => 200],
-                    ['nombre' => 'Zumo de maracuya', 'cantidad' => 200],
-                    ['nombre' => 'Cebolla Blanca', 'cantidad' => 30],
-                    ['nombre' => 'Pimenton Rojo', 'cantidad' => 30],
-                    ['nombre' => 'Vinagre blanco', 'cantidad' => 200],
-                    ['nombre' => 'Azucar Blanca', 'cantidad' => 150],
-                ]
-            ],
-            // 9. SUB POLLO RELLENO
-            [
-                'nombre' => 'SUB POLLO RELLENO',
-                'rendimiento' => 276,
-                'unidad_rendimiento' => 'gr',
-                'notas' => 'Pechuga rellena con tomates secos y queso',
-                'ingredientes' => [
-                    ['nombre' => 'Pechuga Filete', 'cantidad' => 250],
-                    ['nombre' => 'Tomates secos', 'cantidad' => 20],
-                    ['nombre' => 'Queso Mozzarella Tajado', 'cantidad' => 1],
-                    ['nombre' => 'Albahaca Fresca', 'cantidad' => 5],
-                ]
-            ],
-        ];
+        // ========================================
+        // 2. SUB MAYOCILANTRO
+        // ========================================
+        $this->crearSubreceta('SUB MAYOCILANTRO', $categoriaSubrecetas->id, [
+            ['nombre' => 'Mayonesa', 'cantidad' => 500],
+            ['nombre' => 'Ajo pelado', 'cantidad' => 40],
+            ['nombre' => 'Cilantro', 'cantidad' => 70],
+            ['nombre' => 'Rend zumo de limón', 'cantidad' => 30],
+            ['nombre' => 'Pimienta negra', 'cantidad' => 0.5],
+            ['nombre' => 'Sal común', 'cantidad' => 5],
+            ['nombre' => 'Azucar blanca', 'cantidad' => 100],
+            ['nombre' => 'Vinagre blanco', 'cantidad' => 30],
+        ]);
 
-        // 4. Crear cada sub-receta
-        foreach ($subRecetas as $recetaData) {
-            $this->crearSubReceta($recetaData, $categoriaSubRecetas, $unidadGr);
+        // ========================================
+        // 3. SUB MAYOCEBOLLA DULCE
+        // ========================================
+        $this->crearSubreceta('SUB MAYOCEBOLLA DULCE', $categoriaSubrecetas->id, [
+            ['nombre' => 'Mayonesa', 'cantidad' => 500],
+            ['nombre' => 'Sub cebolla caramelizada', 'cantidad' => 200],
+            ['nombre' => 'Rend zumo de limón', 'cantidad' => 30],
+            ['nombre' => 'Mostaza', 'cantidad' => 40],
+            ['nombre' => 'Sal común', 'cantidad' => 10],
+            ['nombre' => 'Miel', 'cantidad' => 30],
+            ['nombre' => 'Paprika', 'cantidad' => 10],
+            ['nombre' => 'Salsa de humo', 'cantidad' => 30],
+        ]);
+
+        // ========================================
+        // 4. SUB CEBOLLA CARAMELIZADA
+        // ========================================
+        $this->crearSubreceta('SUB CEBOLLA CARAMELIZADA', $categoriaSubrecetas->id, [
+            ['nombre' => 'Cebolla blanca', 'cantidad' => 500],
+            ['nombre' => 'Azucar morena', 'cantidad' => 50],
+            ['nombre' => 'Salsa inglesa', 'cantidad' => 30],
+            ['nombre' => 'Mantequilla', 'cantidad' => 20],
+            ['nombre' => 'Tres Cordillera', 'cantidad' => 1],
+        ]);
+
+        // ========================================
+        // 5. SUB BBQ DE TAMARINDO Y RON
+        // ========================================
+        $this->crearSubreceta('SUB BBQ DE TAMARINDO Y RON', $categoriaSubrecetas->id, [
+            ['nombre' => 'Aderezo bbq', 'cantidad' => 1000],
+            ['nombre' => 'Rend zumo de Naranja', 'cantidad' => 200],
+            ['nombre' => 'Azucar blanca', 'cantidad' => 300],
+            ['nombre' => 'Ron Cortez Oro', 'cantidad' => 100],
+            ['nombre' => 'Agua', 'cantidad' => 1000],
+            ['nombre' => 'Tamarindo', 'cantidad' => 500],
+        ]);
+
+        // ========================================
+        // 6. SUB CARNE DE HAMBURGUESA
+        // ========================================
+        $this->crearSubreceta('SUB CARNE DE HAMBURGUESA', $categoriaSubrecetas->id, [
+            ['nombre' => 'Morrillo', 'cantidad' => 400],
+            ['nombre' => 'Pecho de res', 'cantidad' => 600],
+            ['nombre' => 'Salsa inglesa', 'cantidad' => 20],
+            ['nombre' => 'Sal común', 'cantidad' => 10],
+            ['nombre' => 'Mostaza', 'cantidad' => 20],
+            ['nombre' => 'Pasta de ajo', 'cantidad' => 15],
+            ['nombre' => 'Pimienta negra', 'cantidad' => 1],
+        ]);
+
+        // ========================================
+        // 7. SUB HARINA COMPUESTA
+        // ========================================
+        $this->crearSubreceta('SUB HARINA COMPUESTA', $categoriaSubrecetas->id, [
+            ['nombre' => 'Harina de trigo', 'cantidad' => 500],
+            ['nombre' => 'Sal común', 'cantidad' => 20],
+            ['nombre' => 'Paprika', 'cantidad' => 20],
+            ['nombre' => 'Cebolla en polvo', 'cantidad' => 10],
+            ['nombre' => 'Ajo en polvo', 'cantidad' => 10],
+            ['nombre' => 'Pimienta negra', 'cantidad' => 5],
+            ['nombre' => 'Sazon completo badia', 'cantidad' => 5],
+        ]);
+
+        // ========================================
+        // 8. SUB CHUTNEY DE MANGO
+        // ========================================
+        $this->crearSubreceta('SUB CHUTNEY DE MANGO', $categoriaSubrecetas->id, [
+            ['nombre' => 'Mango tommy', 'cantidad' => 200],
+            ['nombre' => 'Rend zumo de maracuya', 'cantidad' => 200],
+            ['nombre' => 'Cebolla blanca', 'cantidad' => 30],
+            ['nombre' => 'Pimenton rojo', 'cantidad' => 30],
+            ['nombre' => 'Vinagre blanco', 'cantidad' => 200],
+            ['nombre' => 'Azucar blanca', 'cantidad' => 150],
+        ]);
+
+        // ========================================
+        // 9. SUB POLLO RELLENO
+        // ========================================
+        $this->crearSubreceta('SUB POLLO RELLENO', $categoriaSubrecetas->id, [
+            ['nombre' => 'Pechuga filete', 'cantidad' => 250],
+            ['nombre' => 'Tomates secos', 'cantidad' => 20],
+            ['nombre' => 'Queso Mozzarella Tajado', 'cantidad' => 1],
+            ['nombre' => 'Albahaca Fresca', 'cantidad' => 5],
+        ]);
+
+        // ========================================
+        // 10. SUB PEPINILLO ENCURTIDO
+        // ========================================
+        $this->crearSubreceta('SUB PEPINILLO ENCURTIDO', $categoriaSubrecetas->id, [
+            ['nombre' => 'Pepino Cohombro', 'cantidad' => 500],
+            ['nombre' => 'Agua', 'cantidad' => 300],
+            ['nombre' => 'Vinagre blanco', 'cantidad' => 300],
+            ['nombre' => 'Coriandro', 'cantidad' => 10],
+            ['nombre' => 'Romero', 'cantidad' => 10],
+            ['nombre' => 'Azucar blanca', 'cantidad' => 50],
+            ['nombre' => 'Sal común', 'cantidad' => 50],
+            ['nombre' => 'Pimienta negra', 'cantidad' => 10],
+        ]);
+
+        $this->command->info('✅ Todas las subrecetas fueron creadas exitosamente!');
+        
+        // Mostrar los códigos generados
+        $this->command->info("\n📋 Códigos generados:");
+        $subrecetas = Producto::where('tipo', 'subensamble')->get();
+        foreach ($subrecetas as $sub) {
+            $this->command->line("   {$sub->codigo} - {$sub->nombre}");
         }
     }
 
     /**
-     * Crear una sub-receta con sus ingredientes
+     * Crear una subreceta con sus ingredientes
      */
-    private function crearSubReceta(array $recetaData, $categoria, $unidad): void
+    private function crearSubreceta(string $nombre, int $categoriaId, array $ingredientes): void
     {
-        // Crear la sub-receta
-        $subReceta = Producto::updateOrCreate(
-            ['nombre' => $recetaData['nombre']],
+        // Buscar unidad de medida por defecto (gr o ID 4)
+        $unidadGr = \App\Models\Catalog\UnidadMedida::where('abreviatura', 'gr')->first();
+        $unidadCompraId = $unidadGr ? $unidadGr->id : 4;
+
+        // Buscar o crear la subreceta (producto tipo 'subensamble')
+        $subreceta = Producto::firstOrCreate(
+            ['nombre' => $nombre],
             [
-                'categoria_id' => $categoria->id,
+                'nombre' => $nombre,
                 'tipo' => 'subensamble',
-                'unidad_uso_id' => $unidad->id,
-                'precio_compra' => 0,
-                'unidad_compra_id' => null,
+                'categoria_id' => $categoriaId,
+                'unidad_compra_id' => $unidadCompraId,
                 'activo' => true,
-                'proveedor_habitual' => null,
-                'notas' => $recetaData['notas'] ?? "Rendimiento: {$recetaData['rendimiento']} {$recetaData['unidad_rendimiento']}",
+                'created_at' => now(),
+                'updated_at' => now(),
             ]
         );
 
-        // Generar código si no tiene
-        if (empty($subReceta->codigo)) {
-            $subReceta->codigo = Producto::generarCodigo('subensamble', $categoria->id);
-            $subReceta->save();
-        }
+        // Eliminar ingredientes antiguos (para evitar duplicados)
+        DB::table('recetas_bom')
+            ->where('producto_padre_id', $subreceta->id)
+            ->delete();
 
-        $this->command->info("\n📝 Procesando: {$recetaData['nombre']}");
-
-        // Asignar ingredientes
-        $ingredientesAgregados = 0;
-        $ingredientesNoEncontrados = [];
-
-        foreach ($recetaData['ingredientes'] as $item) {
-            $ingrediente = Producto::where('nombre', $item['nombre'])->first();
-
+        // Agregar los ingredientes
+        $contador = 0;
+        foreach ($ingredientes as $ingData) {
+            $ingrediente = Producto::where('nombre', $ingData['nombre'])->first();
+            
             if ($ingrediente) {
-                $existe = $subReceta->ingredientes()
-                    ->where('producto_hijo_id', $ingrediente->id)
-                    ->exists();
-
-                if (!$existe) {
-                    $subReceta->ingredientes()->attach($ingrediente->id, [
-                        'cantidad' => $item['cantidad'],
-                        'nota' => null,
-                    ]);
-                    $ingredientesAgregados++;
-                    $this->command->line("  ✅ {$item['nombre']} - {$item['cantidad']} gr");
-                } else {
-                    $this->command->line("  ⚠️ {$item['nombre']} - YA EXISTE");
-                }
+                DB::table('recetas_bom')->insert([
+                    'producto_padre_id' => $subreceta->id,
+                    'producto_hijo_id' => $ingrediente->id,
+                    'cantidad' => $ingData['cantidad'],
+                    'nota' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $contador++;
             } else {
-                $ingredientesNoEncontrados[] = $item['nombre'];
-                $this->command->error("  ❌ {$item['nombre']} - NO ENCONTRADO");
+                $this->command->warn("⚠️ Ingrediente no encontrado: '{$ingData['nombre']}' para '{$nombre}'");
             }
         }
 
-        // Mostrar resumen
-        $costo = $subReceta->calcularCosto();
-        $this->command->info("\n✅ Sub-receta creada: {$recetaData['nombre']}");
-        $this->command->info("📊 Rendimiento: {$recetaData['rendimiento']} {$recetaData['unidad_rendimiento']}");
-        $this->command->info("💰 Costo total: $" . number_format($costo, 0, ',', '.'));
-        $this->command->info("🧾 Ingredientes agregados: {$ingredientesAgregados}/" . count($recetaData['ingredientes']));
-
-        if (count($ingredientesNoEncontrados) > 0) {
-            $this->command->warn("\n⚠️ Ingredientes no encontrados:");
-            foreach ($ingredientesNoEncontrados as $nombre) {
-                $this->command->warn("  - {$nombre}");
-            }
-        }
+        $this->command->info("✅ Subreceta '{$nombre}' creada con {$contador} ingredientes");
     }
 }

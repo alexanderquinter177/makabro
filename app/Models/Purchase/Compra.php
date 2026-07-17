@@ -168,38 +168,7 @@ class Compra extends Model
      */
     public function actualizarStockYkardex(): void
     {
-        foreach ($this->items as $item) {
-            // 1. Obtener o crear el stock en InventarioSede
-            $stock = InventarioSede::firstOrCreate([
-                'sede_id' => $this->sede_id,
-                'producto_id' => $item->producto_id,
-            ]);
-            
-            $saldoAnterior = $stock->cantidad_actual;
-            $saldoNuevo = $saldoAnterior + $item->cantidad;
-            
-            // 2. Actualizar InventarioSede
-            $stock->cantidad_actual = $saldoNuevo;
-            $stock->ultima_actualizacion = now();
-            $stock->updated_by = $this->usuario_id;
-            $stock->save();
-            
-            // 3. Registrar en Kardex
-            KardexMovimiento::create([
-                'sede_id' => $this->sede_id,
-                'producto_id' => $item->producto_id,
-                'tipo_movimiento' => 'entrada_compra',
-                'cantidad' => $item->cantidad,
-                'saldo_anterior' => $saldoAnterior,
-                'saldo_despues' => $saldoNuevo,
-                'costo_unitario' => $item->precio_unitario,
-                'costo_total' => $item->total,
-                'documento_origen_type' => self::class,
-                'documento_origen_id' => $this->id,
-                'notas' => 'Compra: ' . $this->numero_factura,
-                'created_by' => $this->usuario_id,
-            ]);
-        }
+        // El stock, Kardex y el catálogo ahora se actualizan automáticamente a nivel de modelo en CompraItem::booted()
     }
 
     /**

@@ -18,6 +18,8 @@ use App\Models\Catalog\Proveedor;
 use App\Models\Catalog\Producto;
 use App\Models\Auth\User;
 
+use Filament\Support\RawJs;
+
 class CompraForm
 {
     public static function configure(Schema $schema): Schema
@@ -37,6 +39,7 @@ class CompraForm
                                     ->label('Sede')
                                     ->options(Sede::where('activo', true)->pluck('nombre', 'id'))
                                     ->required()
+                                    ->validationAttribute('Sede')
                                     ->searchable()
                                     ->placeholder('Seleccione la sede')
                                     ->prefixIcon('heroicon-o-building-office-2')
@@ -44,19 +47,49 @@ class CompraForm
                                     ->dehydrated()
                                     ->default(fn () => session('sede_id')),
 
-                                Select::make('proveedor_id')
-                                    ->label('Proveedor')
-                                    ->options(Proveedor::where('activo', true)->pluck('nombre', 'id'))
-                                    ->required()
-                                    ->searchable()
-                                    ->placeholder('Seleccione el proveedor')
-                                    ->prefixIcon('heroicon-o-truck')
-                                    ->createOptionForm([
-                                        TextInput::make('nombre')->label('Nombre')->required(),
-                                        TextInput::make('nit')->label('NIT')->required(),
-                                        TextInput::make('telefono')->label('Teléfono'),
-                                        TextInput::make('email')->label('Email')->email(),
-                                    ]),
+                               Select::make('proveedor_id')
+                                ->label('Proveedor')
+                                ->options(Proveedor::where('activo', true)->pluck('nombre', 'id'))
+                                ->required()
+                                ->validationAttribute('Proveedor')
+                                ->searchable()
+                                ->placeholder('Seleccione el proveedor')
+                                ->prefixIcon('heroicon-o-truck')
+                                ->createOptionUsing(function (array $data): int {
+                                    // Convertir a mayúsculas antes de guardar
+                                    return Proveedor::create([
+                                        'nombre' => strtoupper($data['nombre']),
+                                        'nit' => strtoupper($data['nit']),
+                                        'telefono' => $data['telefono'] ?? null,
+                                        'email' => strtolower($data['email'] ?? ''), // Email en minúsculas
+                                        'activo' => true,
+                                    ])->id;
+                                })
+                                ->createOptionForm([
+                                    TextInput::make('nombre')
+                                        ->label('Nombre')
+                                        ->required()
+                                        ->maxLength(255)
+                                        ->formatStateUsing(fn ($state) => strtoupper($state)) // Mostrar en mayúsculas
+                                        ->afterStateHydrated(fn ($state, $set) => $set('nombre', strtoupper($state))) // Al cargar
+                                        ->reactive()
+                                        ->afterStateUpdated(fn ($state, $set) => $set('nombre', strtoupper($state))), // Al escribir
+                                    TextInput::make('nit')
+                                        ->label('NIT')
+                                        ->required()
+                                        ->maxLength(20)
+                                        ->formatStateUsing(fn ($state) => strtoupper($state))
+                                        ->afterStateUpdated(fn ($state, $set) => $set('nit', strtoupper($state))),
+                                    TextInput::make('telefono')
+                                        ->label('Teléfono')
+                                        ->maxLength(20),
+                                    TextInput::make('email')
+                                        ->label('Email')
+                                        ->email()
+                                        ->maxLength(255)
+                                        ->formatStateUsing(fn ($state) => strtolower($state))
+                                        ->afterStateUpdated(fn ($state, $set) => $set('email', strtolower($state))),
+                                ]),
                             ])
                             ->columnSpanFull(),
 
@@ -75,6 +108,7 @@ class CompraForm
                                         'otros'          => '📦 Otros',
                                     ])
                                     ->required()
+                                    ->validationAttribute('Tipo de Compra')
                                     ->default('materia_prima')
                                     ->prefixIcon('heroicon-o-tag')
                                     ->helperText('Clasificación de la compra'),
@@ -83,6 +117,7 @@ class CompraForm
                                     ->label('Registrado por')
                                     ->options(User::where('activo', true)->pluck('name', 'id'))
                                     ->required()
+                                    ->validationAttribute('Registrado por')
                                     ->searchable()
                                     ->default(fn () => auth()->id())
                                     ->placeholder('Seleccione el usuario')
@@ -104,6 +139,15 @@ class CompraForm
                                 TextInput::make('numero_factura')
                                     ->label('Número de Factura')
                                     ->required()
+                                    ->validationAttribute('Número de Factura')
+                                    ->unique(
+                                        table: 'compras',
+                                        column: 'numero_factura',
+                                        ignoreRecord: true,
+                                        modifyRuleUsing: function ($rule, $get) {
+                                            return $rule->where('proveedor_id', $get('proveedor_id'));
+                                        }
+                                    )
                                     ->maxLength(255)
                                     ->placeholder('FAC-12345')
                                     ->prefixIcon('heroicon-o-hashtag'),
@@ -111,6 +155,7 @@ class CompraForm
                                 DatePicker::make('fecha_factura')
                                     ->label('Fecha de Factura')
                                     ->required()
+                                    ->validationAttribute('Fecha de Factura')
                                     ->default(now())
                                     ->displayFormat('d/m/Y')
                                     ->prefixIcon('heroicon-o-calendar'),
@@ -118,6 +163,7 @@ class CompraForm
                                 DatePicker::make('fecha_registro')
                                     ->label('Fecha de Registro')
                                     ->required()
+                                    ->validationAttribute('Fecha de Registro')
                                     ->default(now())
                                     ->displayFormat('d/m/Y')
                                     ->prefixIcon('heroicon-o-clock')
@@ -138,6 +184,7 @@ class CompraForm
                                         'contraentrega'  => '📦 Contra Entrega',
                                     ])
                                     ->required()
+                                    ->validationAttribute('Forma de Pago')
                                     ->default('credito')
                                     ->prefixIcon('heroicon-o-currency-dollar')
                                     ->helperText('Método de pago acordado'),
@@ -167,21 +214,24 @@ class CompraForm
                                             ->label('Producto')
                                             ->options(Producto::where('activo', true)->pluck('nombre', 'id'))
                                             ->required()
+                                            ->validationAttribute('Producto')
                                             ->searchable()
                                             ->placeholder('Seleccione el producto')
                                             ->prefixIcon('heroicon-o-cube')
-                                            ->columnSpan(5)
+                                            ->columnSpan(4)
                                             ->reactive()
                                             ->createOptionForm([
-                                                TextInput::make('nombre')->label('Nombre')->required(),
+                                                TextInput::make('nombre')->label('Nombre')->required()->validationAttribute('Nombre'),
                                                 Select::make('unidad_compra_id')
                                                     ->label('Unidad de Compra')
                                                     ->relationship('unidadCompra', 'nombre')
-                                                    ->required(),
+                                                    ->required()
+                                                    ->validationAttribute('Unidad de Compra'),
                                                 TextInput::make('precio_compra')
                                                     ->label('Precio Compra')
                                                     ->numeric()
-                                                    ->required(),
+                                                    ->required()
+                                                    ->validationAttribute('Precio Compra'),
                                             ])
                                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                                 if ($state) {
@@ -197,129 +247,184 @@ class CompraForm
                                                 }
                                             }),
 
-                                        TextInput::make('unidad_compra')
+                                        Select::make('unidad_compra')
                                             ->label('U.M.')
-                                            ->disabled()
-                                            ->dehydrated(false)
-                                            ->placeholder('---')
-                                            ->columnSpan(1)
-                                            ->extraAttributes(['class' => 'bg-gray-100 dark:bg-gray-800 text-center font-bold'])
+                                            ->placeholder('Seleccionar')
+                                            ->options([
+                                                'kg' => 'Kilogramo (kg)',
+                                                'gr' => 'Gramo (gr)',
+                                                'lt' => 'Litro (lt)',
+                                                'ml' => 'Mililitro (ml)',
+                                                'und' => 'Unidad (und)',
+                                            ])
+                                            ->required()
+                                            ->validationAttribute('U.M.')
+                                            ->searchable()
+                                            ->columnSpan(2)
+                                            ->reactive()
                                             ->afterStateHydrated(function ($set, $get, $state) {
                                                 $productoId = $get('producto_id');
-                                                if ($productoId) {
+                                                if ($productoId && !$state) {
                                                     $producto = Producto::find($productoId);
                                                     if ($producto) {
                                                         $set('unidad_compra', $producto->unidadCompra?->abreviatura ?? '---');
                                                     }
                                                 }
-                                            }),
+                                            })
+                                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                                 $productoId = $get('producto_id');
+                                                 if ($productoId && $state) {
+                                                     $producto = Producto::find($productoId);
+                                                     if ($producto) {
+                                                         $baseUnit = strtolower($producto->unidadCompra?->abreviatura ?? 'und');
+                                                         $selectedUnit = strtolower($state);
+                                                         
+                                                         $factor = 1;
+                                                         $compatible = true;
+                                                         
+                                                         if ($baseUnit === 'gr') {
+                                                             if ($selectedUnit === 'kg') {
+                                                                 $factor = 1000;
+                                                             } elseif ($selectedUnit === 'gr') {
+                                                                 $factor = 1;
+                                                             } else {
+                                                                 $compatible = false;
+                                                             }
+                                                         } elseif ($baseUnit === 'ml') {
+                                                             if ($selectedUnit === 'lt') {
+                                                                 $factor = 1000;
+                                                             } elseif ($selectedUnit === 'ml') {
+                                                                 $factor = 1;
+                                                             } else {
+                                                                 $compatible = false;
+                                                             }
+                                                         } else {
+                                                             if ($selectedUnit !== $baseUnit) {
+                                                                 $compatible = false;
+                                                             }
+                                                         }
+                                                         
+                                                         if (!$compatible) {
+                                                             \Filament\Notifications\Notification::make()
+                                                                 ->title('Unidad incompatible')
+                                                                 ->body("La unidad '{$selectedUnit}' no es compatible con la unidad base del producto ('{$baseUnit}').")
+                                                                 ->warning()
+                                                                 ->send();
+                                                             
+                                                             $set('unidad_compra', $baseUnit);
+                                                             return;
+                                                         }
+                                                         
+                                                         $precioBase = $producto->precio_compra ?? 0;
+                                                         $nuevoPrecio = $precioBase * $factor;
+                                                         $set('precio_unitario', $nuevoPrecio);
+                                                         
+                                                         $cantidad = floatval($get('cantidad') ?? 0);
+                                                         $set('total', round($cantidad * $nuevoPrecio, 2));
+                                                     }
+                                                 }
+                                             }),
 
                                         TextInput::make('cantidad')
                                             ->label('Cantidad')
                                             ->numeric()
                                             ->required()
+                                            ->validationAttribute('Cantidad')
                                             ->minValue(0.01)
                                             ->step(0.01)
                                             ->live(onBlur: true)
                                             ->placeholder('0')
                                             ->prefixIcon('heroicon-o-calculator')
                                             ->columnSpan(2)
-                                            ->afterStateUpdated(fn ($state, callable $set, callable $get) =>
-                                                $set('total', round(floatval($state) * floatval($get('precio_unitario') ?? 0), 2))
-                                            ),
+                                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                                 $precioRaw = $get('precio_unitario') ?? 0;
+                                                 $precio = floatval(str_replace('.', '', $precioRaw));
+                                                 $cantidad = floatval($state);
+                                                 $set('total', round($cantidad * $precio, 2));
+                                             }),
 
                                         TextInput::make('precio_unitario')
                                             ->label('Precio Unit.')
-                                            ->numeric()
                                             ->required()
-                                            ->minValue(0)
-                                            ->step(0.01)
+                                            ->validationAttribute('Precio Unitario')
                                             ->live(onBlur: true)
                                             ->prefix('$')
-                                            ->placeholder('0.00')
+                                            ->placeholder('0')
                                             ->columnSpan(2)
-                                            ->afterStateUpdated(fn ($state, callable $set, callable $get) =>
-                                                $set('total', round(floatval($state) * floatval($get('cantidad') ?? 0), 2))
-                                            ),
+                                            ->mask(RawJs::make('$money($input, ",", ".", 0)'))
+                                            ->stripCharacters('.')
+                                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                                 $cantidadRaw = $get('cantidad') ?? 0;
+                                                 $cantidad = floatval($cantidadRaw);
+                                                 $precio = floatval(str_replace('.', '', $state));
+                                                 $set('total', round($cantidad * $precio, 2));
+                                             }),
 
                                         TextInput::make('total')
                                             ->label('Total')
-                                            ->numeric()
                                             ->required()
+                                            ->validationAttribute('Total')
                                             ->readOnly()
                                             ->prefix('$')
-                                            ->placeholder('0.00')
-                                            ->columnSpan(2),
+                                            ->placeholder('0')
+                                            ->columnSpan(2)
+                                            ->mask(RawJs::make('$money($input, ",", ".", 0)'))
+                                            ->stripCharacters('.'),
                                     ])
                                     ->columnSpanFull(),
                             ])
                             ->defaultItems(1)
                             ->createItemButtonLabel('➕ Agregar producto')
                             ->columnSpanFull()
-                            ->extraAttributes(['class' => 'bg-gray-50 dark:bg-gray-800 rounded-xl']),
+                            ->extraAttributes(['class' => 'bg-gray-50 dark:bg-gray-800 rounded-xl'])
+                            ->live()
+                                    ->afterStateUpdated(function (callable $set, callable $get) {
+                                 $items = $get('items') ?? [];
+                                 $subtotal = 0;
+                                 foreach ($items as $item) {
+                                     $itemTotal = floatval(str_replace('.', '', $item['total'] ?? 0));
+                                     $subtotal += $itemTotal;
+                                 }
+                                 $set('subtotal', $subtotal);
+                                 $set('total', $subtotal);
+                             }),
                     ])
                     ->columnSpanFull(),
 
-                // ── TOTALES + ESTADO ─────────────────────────────────
-                Grid::make(2)
+                // ── TOTALES ─────────────────────────────────
+                Grid::make(3)
                     ->schema([
+                        Placeholder::make('spacer_left')
+                            ->label('')
+                            ->hiddenLabel()
+                            ->columnSpan(1),
+
                         Section::make('Resumen de Totales')
                             ->icon('heroicon-o-currency-dollar')
                             ->schema([
                                 TextInput::make('subtotal')
-                                    ->label('Subtotal')
-                                    ->numeric()
-                                    ->default(0)
-                                    ->prefix('$ ')
-                                    ->readOnly()
-                                    ->placeholder('0.00'),
-
-                                TextInput::make('iva')
-                                    ->label('IVA (19%)')
-                                    ->numeric()
-                                    ->default(0)
-                                    ->prefix('$ ')
-                                    ->placeholder('0.00')
-                                    ->live(onBlur: true)
-                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                        $set('total', round(floatval($get('subtotal') ?? 0) + floatval($state ?? 0), 2));
-                                    }),
+                                    ->hidden(),
 
                                 TextInput::make('total')
                                     ->label('Total a Pagar')
-                                    ->numeric()
                                     ->required()
                                     ->default(0)
                                     ->prefix('$ ')
-                                    ->placeholder('0.00')
+                                    ->placeholder('0')
                                     ->readOnly()
-                                    ->extraAttributes(['class' => 'font-bold text-lg text-primary-600']),
-                            ]),
+                                    ->mask(RawJs::make('$money($input, ",", ".", 0)'))
+                                    ->stripCharacters('.')
+                                    ->validationAttribute('Total a Pagar')
+                                    ->extraAttributes([
+                                        'class' => 'font-bold text-xl text-primary-600 text-center',
+                                    ]),
+                            ])
+                            ->columnSpan(1),
 
-                        Section::make('Estado')
-                            ->icon('heroicon-o-check-circle')
-                            ->schema([
-                                Toggle::make('registro_tardio')
-                                    ->label('Registro Tardío')
-                                    ->default(false)
-                                    ->onColor('warning')
-                                    ->offColor('gray')
-                                    ->helperText('Se registró después de la fecha'),
-
-                                Toggle::make('recibido')
-                                    ->label('Mercancía Recibida')
-                                    ->default(false)
-                                    ->onColor('success')
-                                    ->offColor('danger')
-                                    ->helperText('La mercancía fue recibida'),
-
-                                Toggle::make('pagado')
-                                    ->label('Factura Pagada')
-                                    ->default(false)
-                                    ->onColor('success')
-                                    ->offColor('danger')
-                                    ->helperText('La factura fue pagada'),
-                            ]),
+                        Placeholder::make('spacer_right')
+                            ->label('')
+                            ->hiddenLabel()
+                            ->columnSpan(1),
                     ])
                     ->columnSpanFull(),
 
