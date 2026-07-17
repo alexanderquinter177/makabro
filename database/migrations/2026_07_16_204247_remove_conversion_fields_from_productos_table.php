@@ -25,31 +25,43 @@ return new class extends Migration
             foreach ($foreignKeys as $fk) {
                 try {
                     $table->dropForeign($fk->CONSTRAINT_NAME);
-                    $this->command->info("✅ Eliminada FK: {$fk->CONSTRAINT_NAME}");
+                    echo "✅ Eliminada FK: {$fk->CONSTRAINT_NAME}\n";
                 } catch (\Exception $e) {
-                    $this->command->warn("⚠️ No se pudo eliminar: {$fk->CONSTRAINT_NAME}");
+                    echo "⚠️ No se pudo eliminar: {$fk->CONSTRAINT_NAME} - {$e->getMessage()}\n";
                 }
             }
 
             // ========================================
-            // 2. ELIMINAR LA COLUMNA
+            // 2. ELIMINAR LA COLUMNA unidad_medida_id
             // ========================================
             if (Schema::hasColumn('productos', 'unidad_medida_id')) {
-                $table->dropColumn('unidad_medida_id');
-                $this->command->info("✅ Eliminada columna: unidad_medida_id");
+                try {
+                    $table->dropColumn('unidad_medida_id');
+                    echo "✅ Eliminada columna: unidad_medida_id\n";
+                } catch (\Exception $e) {
+                    echo "⚠️ No se pudo eliminar unidad_medida_id: {$e->getMessage()}\n";
+                }
             }
 
             // ========================================
             // 3. ELIMINAR OTRAS COLUMNAS
             // ========================================
             if (Schema::hasColumn('productos', 'factor_conversion')) {
-                $table->dropColumn('factor_conversion');
-                $this->command->info("✅ Eliminada columna: factor_conversion");
+                try {
+                    $table->dropColumn('factor_conversion');
+                    echo "✅ Eliminada columna: factor_conversion\n";
+                } catch (\Exception $e) {
+                    echo "⚠️ No se pudo eliminar factor_conversion: {$e->getMessage()}\n";
+                }
             }
 
             if (Schema::hasColumn('productos', 'unidad_base')) {
-                $table->dropColumn('unidad_base');
-                $this->command->info("✅ Eliminada columna: unidad_base");
+                try {
+                    $table->dropColumn('unidad_base');
+                    echo "✅ Eliminada columna: unidad_base\n";
+                } catch (\Exception $e) {
+                    echo "⚠️ No se pudo eliminar unidad_base: {$e->getMessage()}\n";
+                }
             }
         });
     }
@@ -61,21 +73,33 @@ return new class extends Migration
             // 1. RESTAURAR COLUMNAS
             // ========================================
             if (!Schema::hasColumn('productos', 'unidad_medida_id')) {
-                $table->foreignId('unidad_medida_id')
-                    ->nullable()
-                    ->constrained('unidades_medida')
-                    ->onDelete('set null');
-                $this->command->info("✅ Restaurada columna: unidad_medida_id");
+                try {
+                    $table->foreignId('unidad_medida_id')
+                        ->nullable()
+                        ->constrained('unidades_medida')
+                        ->onDelete('set null');
+                    echo "✅ Restaurada columna: unidad_medida_id\n";
+                } catch (\Exception $e) {
+                    echo "⚠️ No se pudo restaurar unidad_medida_id: {$e->getMessage()}\n";
+                }
             }
 
             if (!Schema::hasColumn('productos', 'factor_conversion')) {
-                $table->decimal('factor_conversion', 10, 4)->nullable();
-                $this->command->info("✅ Restaurada columna: factor_conversion");
+                try {
+                    $table->decimal('factor_conversion', 10, 4)->nullable();
+                    echo "✅ Restaurada columna: factor_conversion\n";
+                } catch (\Exception $e) {
+                    echo "⚠️ No se pudo restaurar factor_conversion: {$e->getMessage()}\n";
+                }
             }
 
             if (!Schema::hasColumn('productos', 'unidad_base')) {
-                $table->string('unidad_base')->nullable();
-                $this->command->info("✅ Restaurada columna: unidad_base");
+                try {
+                    $table->string('unidad_base')->nullable();
+                    echo "✅ Restaurada columna: unidad_base\n";
+                } catch (\Exception $e) {
+                    echo "⚠️ No se pudo restaurar unidad_base: {$e->getMessage()}\n";
+                }
             }
         });
     }
