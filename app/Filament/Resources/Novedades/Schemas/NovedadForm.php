@@ -45,11 +45,14 @@ class NovedadForm
                                     ->default(fn () => auth()->id())
                                     ->placeholder('Seleccione el usuario'),
 
-                                Select::make('responsable_id')
+                                TextInput::make('responsable_nombre')
                                     ->label('Empleado Responsable')
-                                    ->options(User::pluck('name', 'id'))
-                                    ->searchable()
-                                    ->placeholder('Seleccione el responsable (si aplica)'),
+                                    ->maxLength(255)
+                                    ->placeholder('Escriba el nombre del empleado')
+                                    ->reactive()
+                                    ->afterStateUpdated(fn ($state, $set) => $set('responsable_nombre', strtoupper($state)))
+                                    ->afterStateHydrated(fn ($state, $set) => $set('responsable_nombre', strtoupper($state)))
+                                    ->formatStateUsing(fn ($state) => strtoupper($state)),
                             ])
                             ->columnSpanFull(),
 
@@ -57,17 +60,48 @@ class NovedadForm
                         Grid::make(3)
                             ->schema([
                                 Select::make('tipo')
-                                    ->label('Tipo de Novedad')
-                                    ->options([
-                                        'caída/quiebre' => 'Caída / Quiebre',
-                                        'quemado' => 'Quemado',
-                                        'vencimiento' => 'Vencimiento',
-                                        'daño' => 'Daño',
-                                        'devolución' => 'Devolución',
-                                        'pérdida/robo' => 'Pérdida / Robo',
-                                    ])
-                                    ->required()
-                                    ->placeholder('Seleccione tipo'),
+                                ->label('Tipo de Merma')
+                                ->options([                                    
+                                    '⏰ Caducidad y Frescura' => [
+                                        'vencimiento' => 'Vencimiento/Caducado',
+                                        'producto_perecedero' => 'Producto Perecedero Dañado',
+                                        'lacteo_vencido' => 'Lácteo Vencido',
+                                    ],
+                                    '🥩 Calidad del Producto' => [
+                                        'carne_mala' => 'Carne en Mal Estado',
+                                        'pescado_malo' => 'Pescado/Mariscos en Mal Estado',
+                                        'verdura_mala' => 'Verdura/Fruta en Mal Estado',
+                                        'huevo_malo' => 'Huevos en Mal Estado',
+                                    ],
+                                    '🔧 Manipulación y Almacenamiento' => [
+                                        'caida' => 'Caída/Quiebre',
+                                        'derrame' => 'Derrame/Fuga',
+                                        'quemado' => 'Quemado/Calcinado',
+                                        'mal_almacenamiento' => 'Mal Almacenamiento',
+                                        'cadena_frio' => 'Rotura de Cadena de Frío',
+                                    ],
+                                    '🍽️ Servicio y Consumo' => [
+                                        'devolucion_comensal' => 'Devolución del Comensal',
+                                        'sobrante_cocina' => 'Sobrante de Cocina',
+                                    ],
+                                    '📦 Devoluciones y Control' => [
+                                        'devolucion_proveedor' => 'Devolución a Proveedor',
+                                        'rechazo_calidad' => 'Rechazo por Control de Calidad',
+                                        'rotura_inventario' => 'Rotura de Inventario',
+                                        'error_conteo' => 'Error de Conteo',
+                                    ],
+                                    '🔒 Seguridad' => [
+                                        'robo' => 'Robo/Hurto',
+                                        'perdida' => 'Pérdida No Justificada',
+                                    ],                                    
+                                    '📝 Otros' => [
+                                        'otro' => 'Otro (especificar en notas)',
+                                    ],                                    
+                                ])
+                                ->searchable()
+                                ->required()
+                                ->placeholder('Seleccione el tipo de merma en el restaurante')
+                                ->helperText('Mermas relacionadas con la operación del restaurante y cocina'),
 
                                 Select::make('area')
                                     ->label('Área')
@@ -97,7 +131,7 @@ class NovedadForm
                                     ->options(Producto::where('activo', true)->pluck('nombre', 'id'))
                                     ->searchable()
                                     ->placeholder('Seleccione el producto (si aplica)')
-                                    ->reactive()
+                                    ->live()
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         if ($state) {
                                             $producto = Producto::find($state);
@@ -115,7 +149,7 @@ class NovedadForm
                                     ->label('Cantidad')
                                     ->numeric()
                                     ->placeholder('0.00')
-                                    ->reactive()
+                                    ->live(onBlur: true)
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         $productoId = $get('producto_id');
                                         if ($productoId) {
@@ -137,7 +171,8 @@ class NovedadForm
                                     ->placeholder('0')
                                     ->readOnly()
                                     ->mask(RawJs::make('$money($input, ",", ".", 0)'))
-                                    ->stripCharacters('.')
+                                    ->dehydrateStateUsing(fn ($state) => $state !== null ? str_replace('.', '', $state) : null)
+                                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 0, ',', '.') : '')
                                     ->validationAttribute('Valor Costo'),
                             ])
                             ->columnSpanFull(),
@@ -151,7 +186,8 @@ class NovedadForm
                                     ->prefix('$')
                                     ->placeholder('0')
                                     ->mask(RawJs::make('$money($input, ",", ".", 0)'))
-                                    ->stripCharacters('.')
+                                    ->dehydrateStateUsing(fn ($state) => $state !== null ? str_replace('.', '', $state) : null)
+                                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 0, ',', '.') : '')
                                     ->validationAttribute('Valor Cobro')
                                     ->helperText('Monto a cobrar al empleado (si aplica)'),
 
@@ -171,7 +207,11 @@ class NovedadForm
                         FileUpload::make('evidencia_imagen')
                             ->label('Evidencia (Imagen)')
                             ->image()
-                            ->directory('novedades-evidencias')
+                            ->disk('public')
+                            ->directory('novedades/evidencias')
+                            ->extraInputAttributes([
+                                'capture' => 'environment',
+                            ])
                             ->columnSpanFull(),
 
                         // Sexta fila: Descripción (ocupa todo el ancho)

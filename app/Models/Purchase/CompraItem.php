@@ -61,66 +61,15 @@ class CompraItem extends Model
         // 1. Al crear un ítem (comprar producto)
         static::created(function ($item) {
             $compra = $item->compra;
-            if (!$compra) return;
+            if (!$compra || $compra->status !== 'aprobado') return;
 
-            $producto = $item->producto;
-            $unidadCompraSeleccionada = strtolower($item->unidad_compra ?? 'gr');
-            $unidadBaseCatalogo = $producto && $producto->unidadCompra ? strtolower($producto->unidadCompra->abreviatura) : 'gr';
-            
-            $cantidadEnBase = floatval($item->cantidad);
-            $precioEnBase = floatval($item->precio_unitario);
-            
-            if ($unidadBaseCatalogo === 'gr' && $unidadCompraSeleccionada === 'kg') {
-                $cantidadEnBase = $cantidadEnBase * 1000;
-                $precioEnBase = $precioEnBase / 1000;
-            } elseif ($unidadBaseCatalogo === 'ml' && $unidadCompraSeleccionada === 'lt') {
-                $cantidadEnBase = $cantidadEnBase * 1000;
-                $precioEnBase = $precioEnBase / 1000;
-            }
-
-            $stock = \App\Models\Inventory\InventarioSede::withTrashed()->firstOrCreate([
-                'sede_id' => $compra->sede_id,
-                'producto_id' => $item->producto_id,
-            ]);
-            
-            if ($stock->trashed()) {
-                $stock->restore();
-            }
-            
-            $saldoAnterior = $stock->cantidad_actual;
-            $saldoNuevo = $saldoAnterior + $cantidadEnBase;
-            
-            $stock->cantidad_actual = $saldoNuevo;
-            $stock->updated_by = $compra->usuario_id;
-            $stock->save();
-            
-            // Registrar movimiento en Kardex
-            \App\Models\Inventory\KardexMovimiento::create([
-                'sede_id' => $compra->sede_id,
-                'producto_id' => $item->producto_id,
-                'tipo_movimiento' => 'entrada_compra',
-                'cantidad' => $cantidadEnBase,
-                'saldo_anterior' => $saldoAnterior,
-                'saldo_despues' => $saldoNuevo,
-                'costo_unitario' => $precioEnBase,
-                'costo_total' => $item->total,
-                'documento_origen_type' => Compra::class,
-                'documento_origen_id' => $compra->id,
-                'notas' => 'Compra: ' . $compra->numero_factura,
-                'created_by' => $compra->usuario_id,
-            ]);
-
-            // Actualizar catálogo de productos
-            if ($producto) {
-                $producto->precio_compra = $precioEnBase;
-                $producto->save();
-            }
+            $item->procesarIngresoStock();
         });
 
         // 2. Al actualizar un ítem (modificar cantidad/precio)
         static::updated(function ($item) {
             $compra = $item->compra;
-            if (!$compra) return;
+            if (!$compra || $compra->status !== 'aprobado') return;
 
             $producto = $item->producto;
             $unidadCompraSeleccionada = strtolower($item->unidad_compra ?? 'gr');
@@ -180,7 +129,7 @@ class CompraItem extends Model
         // 3. Al eliminar un ítem de la compra
         static::deleted(function ($item) {
             $compra = $item->compra;
-            if (!$compra) return;
+            if (!$compra || $compra->status !== 'aprobado') return;
 
             $producto = $item->producto;
             $unidadCompraSeleccionada = strtolower($item->unidad_compra ?? 'gr');
@@ -232,6 +181,68 @@ class CompraItem extends Model
     // -------------------------------------------------------------------------
     // Métodos
     // -------------------------------------------------------------------------
+
+    /**
+     * Procesar el ingreso al inventario y registrar en Kardex para este ítem.
+     */
+    public function procesarIngresoStock(): void
+    {
+        $compra = $this->compra;
+        if (!$compra) return;
+
+        $producto = $this->producto;
+        $unidadCompraSeleccionada = strtolower($this->unidad_compra ?? 'gr');
+        $unidadBaseCatalogo = $producto && $producto->unidadCompra ? strtolower($producto->unidadCompra->abreviatura) : 'gr';
+        
+        $cantidadEnBase = floatval($this->cantidad);
+        $precioEnBase = floatval($this->precio_unitario);
+        
+        if ($unidadBaseCatalogo === 'gr' && $unidadCompraSeleccionada === 'kg') {
+            $cantidadEnBase = $cantidadEnBase * 1000;
+            $precioEnBase = $precioEnBase / 1000;
+        } elseif ($unidadBaseCatalogo === 'ml' && $unidadCompraSeleccionada === 'lt') {
+            $cantidadEnBase = $cantidadEnBase * 1000;
+            $precioEnBase = $precioEnBase / 1000;
+        }
+
+        $stock = \App\Models\Inventory\InventarioSede::withTrashed()->firstOrCreate([
+            'sede_id' => $compra->sede_id,
+            'producto_id' => $this->producto_id,
+        ]);
+        
+        if ($stock->trashed()) {
+            $stock->restore();
+        }
+        
+        $saldoAnterior = $stock->cantidad_actual;
+        $saldoNuevo = $saldoAnterior + $cantidadEnBase;
+        
+        $stock->cantidad_actual = $saldoNuevo;
+        $stock->updated_by = $compra->usuario_id;
+        $stock->save();
+        
+        // Registrar movimiento en Kardex
+        \App\Models\Inventory\KardexMovimiento::create([
+            'sede_id' => $compra->sede_id,
+            'producto_id' => $this->producto_id,
+            'tipo_movimiento' => 'entrada_compra',
+            'cantidad' => $cantidadEnBase,
+            'saldo_anterior' => $saldoAnterior,
+            'saldo_despues' => $saldoNuevo,
+            'costo_unitario' => $precioEnBase,
+            'costo_total' => $this->total,
+            'documento_origen_type' => Compra::class,
+            'documento_origen_id' => $compra->id,
+            'notas' => 'Compra: ' . $compra->numero_factura,
+            'created_by' => $compra->usuario_id,
+        ]);
+
+        // Actualizar catálogo de productos
+        if ($producto) {
+            $producto->precio_compra = $precioEnBase;
+            $producto->save();
+        }
+    }
 
     /**
      * Calcular el total del ítem (cantidad * precio_unitario)

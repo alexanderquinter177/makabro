@@ -20,6 +20,15 @@ class Compra extends Model
 
     protected $table = 'compras';
 
+    protected static function booted()
+    {
+        static::deleting(function ($compra) {
+            if ($compra->status !== 'borrador') {
+                throw new \Exception('Solo es posible eliminar compras en estado borrador.');
+            }
+        });
+    }
+
     /**
      * Campos asignables masivamente.
      */
@@ -33,10 +42,9 @@ class Compra extends Model
         'forma_pago',
         'tipo_compra',
         'recibido_por',
-        'subtotal',
-        'iva',
         'total',
         'imagen_factura',
+        'status',
         'notas',
         'registro_tardio',
         'recibido',
@@ -181,6 +189,23 @@ class Compra extends Model
         $this->save();
         
         $this->actualizarStockYkardex();
+    }
+
+    /**
+     * Aprobar la compra, cambiar estado y procesar stock/Kardex de todos sus ítems
+     */
+    public function aprobar(): void
+    {
+        if ($this->status === 'aprobado') {
+            return;
+        }
+
+        $this->status = 'aprobado';
+        $this->save();
+
+        foreach ($this->items as $item) {
+            $item->procesarIngresoStock();
+        }
     }
 
     // -------------------------------------------------------------------------

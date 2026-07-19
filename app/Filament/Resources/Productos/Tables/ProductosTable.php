@@ -17,7 +17,7 @@ use Filament\Notifications\Notification;
 
 class ProductosTable
 {
-    public static function configure(Table $table): Table
+    public static function configure(Table $table, ?string $forceTipo = null): Table
     {
         return $table
             ->columns([
@@ -46,7 +46,8 @@ class ProductosTable
                         'subensamble' => 'warning',
                         'insumo' => 'info',
                     })
-                    ->sortable(),
+                    ->sortable()
+                    ->visible($forceTipo === null),
 
                 TextColumn::make('unidadMedida.nombre')
                     ->label('Unidad')
@@ -68,18 +69,18 @@ class ProductosTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
+            ->filters(array_filter([
                 SelectFilter::make('categoria_id')
                     ->label('Categoría')
                     ->options(Categoria::pluck('nombre', 'id')->toArray()),
 
-                SelectFilter::make('tipo')
+                $forceTipo === null ? SelectFilter::make('tipo')
                     ->label('Tipo')
                     ->options([
                         'venta' => 'Venta',
                         'subensamble' => 'Subensamble',
                         'insumo' => 'Insumo',
-                    ]),
+                    ]) : null,
 
                 SelectFilter::make('activo')
                     ->label('Estado')
@@ -87,7 +88,7 @@ class ProductosTable
                         '1' => 'Activos',
                         '0' => 'Inactivos',
                     ]),
-            ])
+            ]))
             ->headerActions([
                 Action::make('calcularCostosSubrecetas')
                     ->label('Calcular Costos Subrecetas')

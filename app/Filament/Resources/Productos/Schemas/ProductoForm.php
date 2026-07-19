@@ -19,7 +19,7 @@ use Filament\Support\RawJs;
 
 class ProductoForm
 {
-    public static function configure(Schema $schema): Schema
+    public static function configure(Schema $schema, ?string $forceTipo = null): Schema
     {
         return $schema
             ->components([
@@ -50,10 +50,10 @@ class ProductoForm
                                     ->disabled()
                                     ->dehydrated()
                                     ->columnSpan(1)
-                                    ->default(function ($livewire) {
+                                    ->default(function ($livewire) use ($forceTipo) {
                                         try {
                                             if ($livewire instanceof \Filament\Resources\Pages\CreateRecord) {
-                                                $tipo = $livewire->form->getState()['tipo'] ?? null;
+                                                $tipo = $livewire->form->getState()['tipo'] ?? $forceTipo;
                                                 $categoriaId = $livewire->form->getState()['categoria_id'] ?? null;
                                                 if ($tipo && $categoriaId) {
                                                     return Producto::generarCodigo($tipo, $categoriaId);
@@ -64,8 +64,8 @@ class ProductoForm
                                             return null;
                                         }
                                     })
-                                    ->afterStateHydrated(function ($state, $set, $get) {
-                                        $tipo = $get('tipo');
+                                    ->afterStateHydrated(function ($state, $set, $get) use ($forceTipo) {
+                                        $tipo = $get('tipo') ?: $forceTipo;
                                         $categoriaId = $get('categoria_id');
                                         if ($tipo && $categoriaId && empty($state)) {
                                             try {
@@ -87,7 +87,9 @@ class ProductoForm
                                         'insumo'      => '📦 INSUMO (Materia prima)',
                                     ])
                                     ->required()
-                                    ->default('insumo')
+                                    ->default($forceTipo ?? 'insumo')
+                                    ->disabled($forceTipo !== null)
+                                    ->dehydrated()
                                     ->prefixIcon('heroicon-o-cube')
                                     ->live()
                                     ->reactive()
@@ -328,16 +330,23 @@ class ProductoForm
                                 $maxCostoItem = 0;
 
                                 foreach ($componentes as $componente) {
-                                    $costoRaw = str_replace(['$', ',', '.'], '', $componente['costo_parcial'] ?? '0');
-                                    $costoNum = floatval($costoRaw);
-                                    $totalCosto += $costoNum;
+                                    $productoHijoId = $componente['producto_hijo_id'] ?? null;
+                                    $cantidad = floatval($componente['cantidad'] ?? 0);
+                                    if ($productoHijoId && $cantidad > 0) {
+                                        $producto = Producto::find($productoHijoId);
+                                        if ($producto) {
+                                            $costoNum = floatval($producto->getCostoUnitario()) * $cantidad;
+                                            $totalCosto += $costoNum;
 
-                                    if ($costoNum > $maxCostoItem) {
-                                        $maxCostoItem = $costoNum;
-                                        $insumoMasCaroId = $componente['producto_hijo_id'] ?? null;
+                                            if ($costoNum > $maxCostoItem) {
+                                                $maxCostoItem = $costoNum;
+                                                $insumoMasCaroId = $productoHijoId;
+                                            }
+                                        }
                                     }
                                 }
 
+                                $tipo = $get('tipo');
                                 $precioVenta = floatval(str_replace(['$', ',', '.'], '', $get('precio_compra') ?? '0'));
                                 $porcentajeCosto = $precioVenta > 0 ? ($totalCosto / $precioVenta) * 100 : 0;
                                 $beneficio = $precioVenta - $totalCosto;
@@ -386,7 +395,7 @@ class ProductoForm
                                     }
                                     @media (min-width: 1024px) {
                                         .mk-kpi-grid {
-                                            grid-template-columns: repeat(4, minmax(0, 1fr));
+                                            grid-template-columns: repeat(' . ($tipo === 'subensamble' ? '2' : '4') . ', minmax(0, 1fr));
                                         }
                                     }
                                     .mk-kpi-card {
@@ -659,61 +668,92 @@ class ProductoForm
                                 // Grid de Tarjetas KPI
                                 $html .= '  <div class="mk-kpi-grid">';
 
-                                // 1. PRECIO DE VENTA
-                                $html .= '    <div class="mk-kpi-card mk-card-blue-border">';
-                                $html .= '      <div class="mk-kpi-header">';
-                                $html .= '        <span class="mk-kpi-title">Precio de Venta</span>';
-                                $html .= '        <span class="mk-icon-wrapper mk-icon-blue">';
-                                $html .= '          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
-                                $html .= '        </span>';
-                                $html .= '      </div>';
-                                $html .= '      <div class="mk-kpi-value-container">';
-                                $html .= '        <span class="mk-kpi-value">$ ' . number_format($precioVenta, 0, ',', '.') . '</span>';
-                                $html .= '        <span class="mk-kpi-label" style="background: rgba(59,130,246,0.1); color:#2563eb;">VENTA</span>';
-                                $html .= '      </div>';
-                                $html .= '    </div>';
+                                if ($tipo === 'subensamble') {
+                                    // Tarjeta 1: Costo Total de Producción (Subreceta)
+                                    $html .= '    <div class="mk-kpi-card mk-card-rose-border">';
+                                    $html .= '      <div class="mk-kpi-header">';
+                                    $html .= '        <span class="mk-kpi-title">Costo Total Subreceta</span>';
+                                    $html .= '        <span class="mk-icon-wrapper mk-icon-rose">';
+                                    $html .= '          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>';
+                                    $html .= '        </span>';
+                                    $html .= '      </div>';
+                                    $html .= '      <div class="mk-kpi-value-container">';
+                                    $html .= '        <span class="mk-kpi-value mk-color-rose">$ ' . number_format($totalCosto, 0, ',', '.') . '</span>';
+                                    $html .= '        <span class="mk-kpi-label mk-badge-rose">BOM</span>';
+                                    $html .= '      </div>';
+                                    $html .= '    </div>';
 
-                                // 2. COSTO TOTAL DE PRODUCCIÓN
-                                $html .= '    <div class="mk-kpi-card mk-card-rose-border">';
-                                $html .= '      <div class="mk-kpi-header">';
-                                $html .= '        <span class="mk-kpi-title">Costo Insumos</span>';
-                                $html .= '        <span class="mk-icon-wrapper mk-icon-rose">';
-                                $html .= '          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>';
-                                $html .= '        </span>';
-                                $html .= '      </div>';
-                                $html .= '      <div class="mk-kpi-value-container">';
-                                $html .= '        <span class="mk-kpi-value mk-color-rose">$ ' . number_format($totalCosto, 0, ',', '.') . '</span>';
-                                $html .= '        <span class="mk-kpi-label mk-badge-rose">BOM</span>';
-                                $html .= '      </div>';
-                                $html .= '    </div>';
+                                    // Tarjeta 2: Insumo más Caro
+                                    $nombreCaro = $insumoMasCaroId ? (Producto::find($insumoMasCaroId)?->nombre ?? 'Ninguno') : 'Ninguno';
+                                    $html .= '    <div class="mk-kpi-card mk-card-amber-border">';
+                                    $html .= '      <div class="mk-kpi-header">';
+                                    $html .= '        <span class="mk-kpi-title">Insumo de Mayor Peso</span>';
+                                    $html .= '        <span class="mk-icon-wrapper mk-icon-rose" style="background: rgba(245,158,11,0.1); color:#d97706;">';
+                                    $html .= '          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>';
+                                    $html .= '        </span>';
+                                    $html .= '      </div>';
+                                    $html .= '      <div class="mk-kpi-value-container">';
+                                    $html .= '        <span class="mk-kpi-value mk-color-amber" style="font-size: 16px; max-width: 65%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="' . e(strtoupper($nombreCaro)) . '">' . strtoupper($nombreCaro) . '</span>';
+                                    $html .= '        <span class="mk-kpi-label mk-badge-amber">$ ' . number_format($maxCostoItem, 0, ',', '.') . '</span>';
+                                    $html .= '      </div>';
+                                    $html .= '    </div>';
+                                } else {
+                                    // 1. PRECIO DE VENTA
+                                    $html .= '    <div class="mk-kpi-card mk-card-blue-border">';
+                                    $html .= '      <div class="mk-kpi-header">';
+                                    $html .= '        <span class="mk-kpi-title">Precio de Venta</span>';
+                                    $html .= '        <span class="mk-icon-wrapper mk-icon-blue">';
+                                    $html .= '          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                                    $html .= '        </span>';
+                                    $html .= '      </div>';
+                                    $html .= '      <div class="mk-kpi-value-container">';
+                                    $html .= '        <span class="mk-kpi-value">$ ' . number_format($precioVenta, 0, ',', '.') . '</span>';
+                                    $html .= '        <span class="mk-kpi-label" style="background: rgba(59,130,246,0.1); color:#2563eb;">VENTA</span>';
+                                    $html .= '      </div>';
+                                    $html .= '    </div>';
 
-                                // 3. FOOD COST %
-                                $html .= '    <div class="mk-kpi-card mk-card-' . ($porcentajeCosto > 45 ? 'rose' : ($porcentajeCosto > 35 ? 'amber' : 'emerald')) . '-border">';
-                                $html .= '      <div class="mk-kpi-header">';
-                                $html .= '        <span class="mk-kpi-title">Food Cost %</span>';
-                                $html .= '        <span class="mk-kpi-label ' . $costoBadgeClass . '">' . $costoLabel . '</span>';
-                                $html .= '      </div>';
-                                $html .= '      <div class="mk-kpi-value-container" style="margin-top: 8px; flex-direction: column; justify-content: flex-start; align-items: flex-start;">';
-                                $html .= '        <span class="mk-kpi-value ' . $costoColorClass . '">' . number_format($porcentajeCosto, 1, ',', '.') . '%</span>';
-                                $html .= '        <div class="mk-progress-bg">';
-                                $html .= '          <div class="mk-progress-fill ' . $costoBgClass . '" style="width: ' . min($porcentajeCosto, 100) . '%"></div>';
-                                $html .= '        </div>';
-                                $html .= '      </div>';
-                                $html .= '    </div>';
+                                    // 2. COSTO TOTAL DE PRODUCCIÓN
+                                    $html .= '    <div class="mk-kpi-card mk-card-rose-border">';
+                                    $html .= '      <div class="mk-kpi-header">';
+                                    $html .= '        <span class="mk-kpi-title">Costo Insumos</span>';
+                                    $html .= '        <span class="mk-icon-wrapper mk-icon-rose">';
+                                    $html .= '          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>';
+                                    $html .= '        </span>';
+                                    $html .= '      </div>';
+                                    $html .= '      <div class="mk-kpi-value-container">';
+                                    $html .= '        <span class="mk-kpi-value mk-color-rose">$ ' . number_format($totalCosto, 0, ',', '.') . '</span>';
+                                    $html .= '        <span class="mk-kpi-label mk-badge-rose">BOM</span>';
+                                    $html .= '      </div>';
+                                    $html .= '    </div>';
 
-                                // 4. MARGEN / GANANCIA
-                                $html .= '    <div class="mk-kpi-card mk-card-emerald-border">';
-                                $html .= '      <div class="mk-kpi-header">';
-                                $html .= '        <span class="mk-kpi-title">Utilidad Bruta</span>';
-                                $html .= '        <span class="mk-icon-wrapper mk-icon-emerald">';
-                                $html .= '          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>';
-                                $html .= '        </span>';
-                                $html .= '      </div>';
-                                $html .= '      <div class="mk-kpi-value-container">';
-                                $html .= '        <span class="mk-kpi-value ' . $utilidadColorClass . '">$ ' . number_format($beneficio, 0, ',', '.') . '</span>';
-                                $html .= '        <span class="mk-kpi-label ' . $utilidadBadgeClass . '">MARGEN</span>';
-                                $html .= '      </div>';
-                                $html .= '    </div>';
+                                    // 3. FOOD COST %
+                                    $html .= '    <div class="mk-kpi-card mk-card-' . ($porcentajeCosto > 45 ? 'rose' : ($porcentajeCosto > 35 ? 'amber' : 'emerald')) . '-border">';
+                                    $html .= '      <div class="mk-kpi-header">';
+                                    $html .= '        <span class="mk-kpi-title">Food Cost %</span>';
+                                    $html .= '        <span class="mk-kpi-label ' . $costoBadgeClass . '">' . $costoLabel . '</span>';
+                                    $html .= '      </div>';
+                                    $html .= '      <div class="mk-kpi-value-container" style="margin-top: 8px; flex-direction: column; justify-content: flex-start; align-items: flex-start;">';
+                                    $html .= '        <span class="mk-kpi-value ' . $costoColorClass . '">' . number_format($porcentajeCosto, 1, ',', '.') . '%</span>';
+                                    $html .= '        <div class="mk-progress-bg">';
+                                    $html .= '          <div class="mk-progress-fill ' . $costoBgClass . '" style="width: ' . min($porcentajeCosto, 100) . '%"></div>';
+                                    $html .= '        </div>';
+                                    $html .= '      </div>';
+                                    $html .= '    </div>';
+
+                                    // 4. MARGEN / GANANCIA
+                                    $html .= '    <div class="mk-kpi-card mk-card-emerald-border">';
+                                    $html .= '      <div class="mk-kpi-header">';
+                                    $html .= '        <span class="mk-kpi-title">Utilidad Bruta</span>';
+                                    $html .= '        <span class="mk-icon-wrapper mk-icon-emerald">';
+                                    $html .= '          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>';
+                                    $html .= '        </span>';
+                                    $html .= '      </div>';
+                                    $html .= '      <div class="mk-kpi-value-container">';
+                                    $html .= '        <span class="mk-kpi-value ' . $utilidadColorClass . '">$ ' . number_format($beneficio, 0, ',', '.') . '</span>';
+                                    $html .= '        <span class="mk-kpi-label ' . $utilidadBadgeClass . '">MARGEN</span>';
+                                    $html .= '      </div>';
+                                    $html .= '    </div>';
+                                }
 
                                 $html .= '  </div>'; // Fin KPIs
 
@@ -745,11 +785,24 @@ class ProductoForm
                                     $html .= '        <tbody>';
 
                                     foreach ($componentes as $componente) {
-                                        $costoItem = floatval(str_replace(['$', ',', '.'], '', $componente['costo_parcial'] ?? '0'));
-                                        $pesoPorcentaje = $totalCosto > 0 ? ($costoItem / $totalCosto) * 100 : 0;
-                                        
                                         $productoHijoId = $componente['producto_hijo_id'] ?? null;
-                                        $nombreItem = Producto::find($productoHijoId)?->nombre ?? 'DESCONOCIDO';
+                                        $cantidad = floatval($componente['cantidad'] ?? 0);
+                                        $costoItem = 0;
+                                        $precioIngrediente = 0;
+                                        $nombreItem = 'DESCONOCIDO';
+                                        $unidadMedida = 'UND';
+                                        
+                                        if ($productoHijoId) {
+                                            $productoHijo = Producto::with('unidadCompra')->find($productoHijoId);
+                                            if ($productoHijo) {
+                                                $nombreItem = $productoHijo->nombre;
+                                                $precioIngrediente = floatval($productoHijo->getCostoUnitario());
+                                                $costoItem = $precioIngrediente * $cantidad;
+                                                $unidadMedida = $productoHijo->unidadCompra?->abreviatura ?? 'UND';
+                                            }
+                                        }
+
+                                        $pesoPorcentaje = $totalCosto > 0 ? ($costoItem / $totalCosto) * 100 : 0;
                                         $esMasCaro = ($productoHijoId === $insumoMasCaroId && count($componentes) > 1);
 
                                         $html .= '        <tr>';
@@ -759,14 +812,9 @@ class ProductoForm
                                             $html .= '        <span class="mk-table-tag">🔥 Mayor Costo</span>';
                                         }
                                         $html .= '          </td>';
-                                        $html .= '          <td style="text-align: right; font-weight: 600; color: #71717a;">' . number_format(floatval($componente['cantidad'] ?? 0), 3, ',', '.') . '</td>';
-                                        $html .= '          <td style="text-align: center; font-weight: 800; color: #a1a1aa;">' . strtoupper($componente['unidad_medida'] ?? 'UND') . '</td>';
-                                        
-                                        $precioIngredienteRaw = $componente['precio_unitario_ingrediente'] ?? '0';
-                                        $precioIngredienteClean = str_replace(['.', ','], ['', '.'], $precioIngredienteRaw);
-                                        $precioIngrediente = floatval($precioIngredienteClean);
+                                        $html .= '          <td style="text-align: right; font-weight: 600; color: #71717a;">' . number_format($cantidad, 3, ',', '.') . '</td>';
+                                        $html .= '          <td style="text-align: center; font-weight: 800; color: #a1a1aa;">' . strtoupper($unidadMedida) . '</td>';
                                         $html .= '          <td style="text-align: right; color: #71717a;">$ ' . number_format($precioIngrediente, 2, ',', '.') . '</td>';
-                                        
                                         $html .= '          <td style="text-align: right; font-weight: 700; color: var(--gray-900, #18181b);">$ ' . number_format($costoItem, 0, ',', '.') . '</td>';
                                         
                                         // Visualización dinámica de porcentaje con barra estilizada

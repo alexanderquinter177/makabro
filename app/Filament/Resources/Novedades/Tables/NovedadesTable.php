@@ -25,6 +25,11 @@ class NovedadesTable
                     ->searchable()
                     ->sortable(),
 
+                TextColumn::make('responsable_nombre')
+                    ->label('Responsable')
+                    ->searchable()
+                    ->sortable(),
+
                 TextColumn::make('tipo')
                     ->label('Tipo')
                     ->badge()

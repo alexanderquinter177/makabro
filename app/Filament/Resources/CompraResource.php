@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\Compras\Pages\CreateCompra;
 use App\Filament\Resources\Compras\Pages\EditCompra;
 use App\Filament\Resources\Compras\Pages\ListCompras;
+use App\Filament\Resources\Compras\Pages\ViewCompra;
 use App\Filament\Resources\Compras\Schemas\CompraForm;
 use App\Filament\Resources\Compras\Tables\ComprasTable;
 use App\Models\Purchase\Compra;
@@ -31,6 +32,13 @@ class CompraResource extends Resource
         return CompraForm::configure($schema);
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual;
+        return parent::getEloquentQuery()
+            ->where('sede_id', $sedeId);
+    }
+
     public static function table(Table $table): Table
     {
         return ComprasTable::configure($table);
@@ -48,6 +56,7 @@ class CompraResource extends Resource
         return [
             'index' => ListCompras::route('/'),
             'create' => CreateCompra::route('/create'),
+            'view' => ViewCompra::route('/{record}'),
             'edit' => EditCompra::route('/{record}/edit'),
         ];
     }

@@ -26,6 +26,8 @@ class ProductoResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Productos';
 
+    protected static bool $shouldRegisterNavigation = false;
+
     public static function form(Schema $schema): Schema
     {
         return ProductoForm::configure($schema);

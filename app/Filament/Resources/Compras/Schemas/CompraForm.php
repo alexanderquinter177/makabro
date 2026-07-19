@@ -26,6 +26,7 @@ class CompraForm
     {
         return $schema
             ->components([
+               
 
                 // ── CABECERA: Información de la Compra ─────────────────────────
                 Section::make('Información de la Compra')
@@ -93,8 +94,8 @@ class CompraForm
                             ])
                             ->columnSpanFull(),
 
-                        // Tipo + registrado por en grid de 2 columnas
-                        Grid::make(2)
+                        // Tipo + registrado por + estado en grid de 3 columnas
+                        Grid::make(3)
                             ->schema([
                                 Select::make('tipo_compra')
                                     ->label('Tipo de Compra')
@@ -124,6 +125,19 @@ class CompraForm
                                     ->prefixIcon('heroicon-o-user')
                                     ->disabled(true)
                                     ->dehydrated(),
+
+                                Select::make('status')
+                                    ->label('Estado')
+                                    ->options([
+                                        'borrador'  => '📝 Borrador',
+                                        'pendiente' => '⏳ Pendiente de Aprobación'
+                                    ])
+                                    ->required()
+                                    ->default('borrador')
+                                    ->disabled(fn ($record) => $record !== null && $record->status !== 'borrador')
+                                    ->dehydrated()
+                                    ->prefixIcon('heroicon-o-flag')
+                                    ->helperText('Estado actual de la compra'),
                             ])
                             ->columnSpanFull(),
                     ])
@@ -172,7 +186,7 @@ class CompraForm
                             ])
                             ->columnSpanFull(),
 
-                        Grid::make(2)
+                        Grid::make(3)
                             ->schema([
                                 Select::make('forma_pago')
                                     ->label('Forma de Pago')
@@ -195,7 +209,30 @@ class CompraForm
                                     ->placeholder('Nombre de quien recibe')
                                     ->prefixIcon('heroicon-o-user-group')
                                     ->helperText('Persona que recibe la mercancía'),
-                            ])
+
+                                FileUpload::make('imagen_factura')
+                                    ->label('Imagen/PDF de la Factura')
+                                    ->disk('public')
+                                    ->directory('compras/facturas')
+                                    ->acceptedFileTypes(['image/*', 'application/pdf'])
+                                    ->maxSize(5120)
+                                    ->placeholder('Suba la factura')
+                                    ->downloadable()
+                                    ->openable()
+                                    ->visible(fn ($record) => $record === null || $record->status === 'borrador'),
+
+                                Placeholder::make('ver_factura')
+                                    ->label('Documento Soporte (Factura)')
+                                    ->content(fn ($record) => $record?->imagen_factura ? new \Illuminate\Support\HtmlString(
+                                        '<a href="' . asset('storage/' . $record->imagen_factura) . '" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition shadow-sm" style="background-color: #4f46e5; color: #ffffff; padding: 8px 16px; border-radius: 6px; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
+                                            <svg class="w-5 h-5" style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            Ver Factura / Soporte
+                                        </a>'
+                                    ) : 'No se cargó ningún documento soporte para esta compra.')
+                                    ->visible(fn ($record) => $record !== null && $record->status !== 'borrador'),
+
+                               
+                             ])
                             ->columnSpanFull(),
                     ])
                     ->columnSpanFull(),
@@ -212,7 +249,7 @@ class CompraForm
                                     ->schema([
                                         Select::make('producto_id')
                                             ->label('Producto')
-                                            ->options(Producto::where('activo', true)->pluck('nombre', 'id'))
+                                            ->options(Producto::pluck('nombre', 'id'))
                                             ->required()
                                             ->validationAttribute('Producto')
                                             ->searchable()
@@ -262,7 +299,10 @@ class CompraForm
                                             ->searchable()
                                             ->columnSpan(2)
                                             ->reactive()
-                                            ->afterStateHydrated(function ($set, $get, $state) {
+                                            ->afterStateHydrated(function ($set, $get, $state, string $operation) {
+                                                if ($operation === 'edit') {
+                                                    return;
+                                                }
                                                 $productoId = $get('producto_id');
                                                 if ($productoId && !$state) {
                                                     $producto = Producto::find($productoId);
@@ -352,7 +392,8 @@ class CompraForm
                                             ->placeholder('0')
                                             ->columnSpan(2)
                                             ->mask(RawJs::make('$money($input, ",", ".", 0)'))
-                                            ->stripCharacters('.')
+                                            ->dehydrateStateUsing(fn ($state) => $state !== null ? str_replace('.', '', $state) : null)
+                                            ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 0, ',', '.') : '')
                                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                                  $cantidadRaw = $get('cantidad') ?? 0;
                                                  $cantidad = floatval($cantidadRaw);
@@ -369,7 +410,8 @@ class CompraForm
                                             ->placeholder('0')
                                             ->columnSpan(2)
                                             ->mask(RawJs::make('$money($input, ",", ".", 0)'))
-                                            ->stripCharacters('.'),
+                                            ->dehydrateStateUsing(fn ($state) => $state !== null ? str_replace('.', '', $state) : null)
+                                            ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 0, ',', '.') : ''),
                                     ])
                                     ->columnSpanFull(),
                             ])
@@ -413,8 +455,9 @@ class CompraForm
                                     ->placeholder('0')
                                     ->readOnly()
                                     ->mask(RawJs::make('$money($input, ",", ".", 0)'))
-                                    ->stripCharacters('.')
+                                    ->dehydrateStateUsing(fn ($state) => $state !== null ? str_replace('.', '', $state) : null)
                                     ->validationAttribute('Total a Pagar')
+                                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 0, ',', '.') : '')
                                     ->extraAttributes([
                                         'class' => 'font-bold text-xl text-primary-600 text-center',
                                     ]),

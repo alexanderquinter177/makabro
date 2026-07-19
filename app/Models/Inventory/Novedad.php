@@ -29,6 +29,7 @@ class Novedad extends Model
         'sede_id',
         'usuario_id',
         'responsable_id',
+        'responsable_nombre',
         'tipo',
         'area',
         'tipo_afectado',

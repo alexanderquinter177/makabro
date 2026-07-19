@@ -1,13 +1,11 @@
 <?php
 
-namespace App\Filament\Resources\Compras\Tables;
+namespace App\Filament\Resources\AprobacionCompras\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Actions\Action;
@@ -15,7 +13,7 @@ use Filament\Notifications\Notification;
 use App\Models\Catalog\Sede;
 use App\Models\Catalog\Proveedor;
 
-class ComprasTable
+class AprobacionComprasTable
 {
     public static function configure(Table $table): Table
     {
@@ -90,50 +88,68 @@ class ComprasTable
                 SelectFilter::make('proveedor_id')
                     ->label('Proveedor')
                     ->options(Proveedor::pluck('nombre', 'id')->toArray()),
-
-                SelectFilter::make('registro_tardio')
-                    ->label('Registro Tardío')
-                    ->options([
-                        '1' => 'Sí',
-                        '0' => 'No',
-                    ]),
             ])
             ->actions([
                 ViewAction::make(),
-                EditAction::make()
-                    ->visible(fn ($record) => $record->status === 'borrador'),
-                Action::make('enviar')
-                    ->label('Presentar')
-                    ->icon('heroicon-o-paper-airplane')
-                    ->color('primary')
+                Action::make('aprobar')
+                    ->label('Aprobar')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
                     ->requiresConfirmation()
-                    ->modalHeading('¿Presentar esta compra para aprobación?')
-                    ->modalDescription('Esta acción cambiará el estado de la compra a "Pendiente de Aprobación" para que los administradores puedan revisarla y aprobarla.')
-                    ->visible(fn ($record) => $record->status === 'borrador')
+                    ->modalHeading('¿Aprobar esta compra/factura?')
+                    ->modalDescription('Esta acción cambiará el estado de la compra a "Aprobado", sumará el stock de los productos en la sede correspondiente y registrará los movimientos en el Kardex. Esta acción no se puede deshacer.')
+                    ->visible(fn ($record) => $record->status === 'pendiente' && auth()->user()?->hasPermissionTo('compra.aprobar'))
                     ->action(function ($record) {
-                        $record->status = 'pendiente';
-                        $record->save();
+                        $record->aprobar();
                         
                         Notification::make()
-                            ->title('Compra presentada')
-                            ->body('La compra ha sido enviada para aprobación.')
+                            ->title('Compra aprobada')
+                            ->body('El stock de los productos ha sido actualizado y se han registrado los movimientos en el Kardex.')
                             ->success()
                             ->send();
                     }),
+                Action::make('devolver')
+                    ->label('Devolver')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('¿Devolver esta compra a Borrador?')
+                    ->modalDescription('Esta acción cambiará el estado de la compra a "Borrador" para que el usuario creador pueda modificarla o corregirla.')
+                    ->visible(fn ($record) => $record->status === 'pendiente' && auth()->user()?->hasPermissionTo('compra.aprobar'))
+                    ->action(function ($record) {
+                        $record->status = 'borrador';
+                        $record->save();
+                        
+                        Notification::make()
+                            ->title('Compra devuelta')
+                            ->body('La compra ha sido devuelta a estado borrador para su edición.')
+                            ->warning()
+                            ->send();
+                    }),
+                Action::make('rechazar')
+                    ->label('Rechazar')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('¿Rechazar esta compra?')
+                    ->modalDescription('Esta acción marcará la compra como "Rechazada". No se actualizará el stock ni se registrarán movimientos de Kardex. Esta acción es definitiva.')
+                    ->visible(fn ($record) => $record->status === 'pendiente' && auth()->user()?->hasPermissionTo('compra.aprobar'))
+                    ->action(function ($record) {
+                        $record->status = 'rechazado';
+                        $record->save();
+                        
+                        Notification::make()
+                            ->title('Compra rechazada')
+                            ->body('La compra ha sido rechazada y guardada como histórico.')
+                            ->danger()
+                            ->send();
+                    })
             ])
-            ->recordUrl(function ($record) {
-                if ($record->status === 'borrador') {
-                    return \App\Filament\Resources\CompraResource::getUrl('edit', ['record' => $record]);
-                }
-                return \App\Filament\Resources\CompraResource::getUrl('view', ['record' => $record]);
-            })
             ->recordActions([
                 ViewAction::make(),
             ])
             ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
+                // Las aprobaciones no se borran en lote por seguridad
             ]);
     }
 }
