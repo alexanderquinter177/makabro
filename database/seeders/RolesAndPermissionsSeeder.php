@@ -12,64 +12,82 @@ class RolesAndPermissionsSeeder extends Seeder
 {
     public function run(): void
     {
-        // Reset cached roles and permissions
+        // Limpiar caché de roles y permisos
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // ============================================
         // 1. CREAR TODOS LOS PERMISOS
-        // ============================================
         $this->crearTodosLosPermisos();
 
-        // ============================================
-        // 2. CREAR ROLES
-        // ============================================
+        // 2. CREAR ROLES Y ASIGNAR PERMISOS
         $this->crearRoles();
 
-        $this->command->info('✅ Roles y permisos creados exitosamente.');
+        $this->command->info('✅ Roles y permisos creados y asignados exitosamente.');
     }
 
     private function crearTodosLosPermisos(): void
     {
+        // Acciones estándar de Filament/Spatie
+        $estandar = ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar', 'restaurar', 'eliminar_permanente'];
+
         $modulos = [
-            'auditoria' => ['ver_listado', 'ver_detalle', 'exportar', 'eliminar'],
-            'usuario' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar', 'restaurar', 'eliminar_permanente', 'resetear_password', 'asignar_rol'],
-            'categoria' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar'],
-            'producto' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar', 'importar', 'exportar', 'cambiar_precio', 'cambiar_stock'],
-            'proveedor' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar', 'cambiar_estado'],
-            'sede' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar', 'restaurar', 'eliminar_permanente', 'asignar_usuario'],
-            'unidad' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar'],
-            'inventario' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar', 'aprobar', 'rechazar', 'exportar', 'pdf'],
-            'inventario_sede' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar', 'exportar'],
-            'kardex' => ['ver_listado', 'ver_detalle', 'exportar', 'pdf', 'reporte'],
-            'novedad' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar', 'resolver', 'asignar', 'rechazar'],
-            'compra' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar', 'aprobar', 'rechazar', 'pagar', 'recibir', 'exportar', 'pdf'],
-            'compra_item' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar', 'recibir'],
-            'reporte_ventas' => ['ver_listado', 'ver_detalle', 'importar', 'eliminar'],
+            // ── Gestión Principal ────────────────────────────────────────────────
+            'usuario'         => array_merge($estandar, ['resetear_password', 'asignar_rol']),
+            'rol'             => $estandar,
+            'empresa'         => $estandar,
+            'sede'            => array_merge($estandar, ['asignar_usuario']),
+            'auditoria'       => ['ver_listado', 'ver_detalle', 'exportar', 'eliminar'],
+
+            // ── Catálogo ─────────────────────────────────────────────────────────
+            'producto'        => array_merge($estandar, ['importar', 'exportar', 'cambiar_precio', 'cambiar_stock']),
+            'categoria'       => $estandar,
+            'unidad'          => $estandar,
+
+            // ── Operación de Sede ────────────────────────────────────────────────
+            'inventario_sede' => array_merge($estandar, ['exportar']),
+            'kardex'          => array_merge($estandar, ['exportar', 'pdf', 'reporte']),
+            'inventario'      => array_merge($estandar, ['aprobar', 'rechazar', 'exportar', 'pdf']),
+
+            // ── Abastecimiento ───────────────────────────────────────────────────
+            'proveedor'       => array_merge($estandar, ['cambiar_estado']),
+            'compra'          => array_merge($estandar, ['aprobar', 'rechazar', 'pagar', 'recibir', 'exportar', 'pdf']),
+            'compra_item'     => array_merge($estandar, ['recibir']),
+            'historico_precios'=> array_merge($estandar, ['exportar']),
+
+            // ── Ventas y Reportes ────────────────────────────────────────────────
+            'reporte_ventas'  => array_merge($estandar, ['importar']),
+            'dashboard'       => ['ver_financiero', 'ver_ventas', 'ver_kpis'],
+
+            // ── Atención al Cliente (Call Center & WhatsApp IA) ─────────────────
+            'chat'            => $estandar,
+            'mensaje'         => $estandar,
+            'bot_config'      => $estandar,
         ];
 
+        $totalPermisos = 0;
         foreach ($modulos as $modulo => $acciones) {
             foreach ($acciones as $accion) {
                 Permission::firstOrCreate([
                     'name' => "{$modulo}.{$accion}",
                     'guard_name' => 'web'
                 ]);
+                $totalPermisos++;
             }
         }
 
-        $this->command->info('✅ ' . Permission::count() . ' permisos creados.');
+        $this->command->info("✅ {$totalPermisos} permisos creados/verificados en la base de datos.");
     }
 
     private function crearRoles(): void
     {
-        // 1. SUPER ADMINISTRADOR - Acceso total
+        // 1. SUPER ADMINISTRADOR - Acceso total absoluto
         $superAdmin = Role::firstOrCreate([
             'name' => 'super_admin',
             'guard_name' => 'web'
         ]);
         $superAdmin->syncPermissions(Permission::all());
         $this->command->info('✅ Super Administrador creado con todos los permisos (' . $superAdmin->permissions->count() . ' permisos)');
-        
-        // 2. ADMIN - Administrador general
+
+        // 2. ADMIN - Administrador general (acceso completo)
         $admin = Role::firstOrCreate([
             'name' => 'admin',
             'guard_name' => 'web'
@@ -95,6 +113,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'compra.ver_listado', 'compra.ver_detalle', 'compra.crear', 'compra.editar', 'compra.aprobar', 'compra.rechazar', 'compra.recibir',
             'compra_item.ver_listado', 'compra_item.ver_detalle', 'compra_item.crear', 'compra_item.editar', 'compra_item.recibir',
             'reporte_ventas.ver_listado', 'reporte_ventas.ver_detalle', 'reporte_ventas.importar', 'reporte_ventas.eliminar',
+            'dashboard.ver_financiero', 'dashboard.ver_ventas', 'dashboard.ver_kpis',
         ]);
         $this->command->info('✅ Gerente de Sede creado (' . $gerente->permissions->count() . ' permisos)');
 
@@ -125,12 +144,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'producto.ver_listado', 'producto.ver_detalle', 'producto.cambiar_stock',
             'proveedor.ver_listado', 'proveedor.ver_detalle',
             'unidad.ver_listado', 'unidad.ver_detalle',
-            'inventario.ver_listado', 'inventario.ver_detalle', 'inventario.crear', 'inventario.editar', 
+            'inventario.ver_listado', 'inventario.ver_detalle', 'inventario.crear', 'inventario.editar',
             'inventario.eliminar', 'inventario.aprobar', 'inventario.rechazar', 'inventario.exportar', 'inventario.pdf',
-            'inventario_sede.ver_listado', 'inventario_sede.ver_detalle', 'inventario_sede.crear', 
+            'inventario_sede.ver_listado', 'inventario_sede.ver_detalle', 'inventario_sede.crear',
             'inventario_sede.editar', 'inventario_sede.eliminar', 'inventario_sede.exportar',
             'kardex.ver_listado', 'kardex.ver_detalle', 'kardex.exportar', 'kardex.pdf', 'kardex.reporte',
-            'novedad.ver_listado', 'novedad.ver_detalle', 'novedad.crear', 'novedad.editar', 
+            'novedad.ver_listado', 'novedad.ver_detalle', 'novedad.crear', 'novedad.editar',
             'novedad.eliminar', 'novedad.resolver', 'novedad.asignar', 'novedad.rechazar',
             'compra.ver_listado', 'compra.ver_detalle', 'compra.recibir',
             'compra_item.ver_listado', 'compra_item.ver_detalle', 'compra_item.recibir',
