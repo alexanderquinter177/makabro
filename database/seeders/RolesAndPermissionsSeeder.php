@@ -44,6 +44,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'novedad' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar', 'resolver', 'asignar', 'rechazar'],
             'compra' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar', 'aprobar', 'rechazar', 'pagar', 'recibir', 'exportar', 'pdf'],
             'compra_item' => ['ver_listado', 'ver_detalle', 'crear', 'editar', 'eliminar', 'recibir'],
+            'reporte_ventas' => ['ver_listado', 'ver_detalle', 'importar', 'eliminar'],
         ];
 
         foreach ($modulos as $modulo => $acciones) {
@@ -93,6 +94,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'kardex.ver_listado', 'kardex.ver_detalle', 'kardex.reporte',
             'compra.ver_listado', 'compra.ver_detalle', 'compra.crear', 'compra.editar', 'compra.aprobar', 'compra.rechazar', 'compra.recibir',
             'compra_item.ver_listado', 'compra_item.ver_detalle', 'compra_item.crear', 'compra_item.editar', 'compra_item.recibir',
+            'reporte_ventas.ver_listado', 'reporte_ventas.ver_detalle', 'reporte_ventas.importar', 'reporte_ventas.eliminar',
         ]);
         $this->command->info('✅ Gerente de Sede creado (' . $gerente->permissions->count() . ' permisos)');
 
@@ -132,6 +134,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'novedad.eliminar', 'novedad.resolver', 'novedad.asignar', 'novedad.rechazar',
             'compra.ver_listado', 'compra.ver_detalle', 'compra.recibir',
             'compra_item.ver_listado', 'compra_item.ver_detalle', 'compra_item.recibir',
+            'reporte_ventas.ver_listado', 'reporte_ventas.ver_detalle', 'reporte_ventas.importar', 'reporte_ventas.eliminar',
         ]);
         $this->command->info('✅ Administrador de Inventario creado (' . $adminInventario->permissions->count() . ' permisos)');
 
@@ -168,6 +171,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'novedad.ver_listado', 'novedad.ver_detalle',
             'compra.ver_listado', 'compra.ver_detalle', 'compra.exportar',
             'compra_item.ver_listado', 'compra_item.ver_detalle',
+            'reporte_ventas.ver_listado', 'reporte_ventas.ver_detalle',
         ]);
         $this->command->info('✅ Auditor creado (' . $auditor->permissions->count() . ' permisos)');
 

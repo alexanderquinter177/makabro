@@ -51,6 +51,12 @@ class Producto extends Model
         return $this->belongsTo(UnidadMedida::class, 'unidad_compra_id');
     }
 
+    public function historialPrecios(): HasMany
+    {
+        return $this->hasMany(\App\Models\Inventory\ProductPriceHistory::class, 'producto_id')
+                    ->latest();
+    }
+
     // -------------------------------------------------------------------------
     // Relaciones BOM (Recetas)
     // -------------------------------------------------------------------------

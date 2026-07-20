@@ -237,9 +237,23 @@ class CompraItem extends Model
             'created_by' => $compra->usuario_id,
         ]);
 
-        // Actualizar catálogo de productos
+        // Actualizar catálogo de productos y registrar histórico de precio si cambió
         if ($producto) {
-            $producto->precio_compra = $precioEnBase;
+            $precioActual  = round(floatval($producto->precio_compra), 4);
+            $precioNuevo   = round($precioEnBase, 4);
+
+            if ($precioActual !== $precioNuevo) {
+                \App\Models\Inventory\ProductPriceHistory::create([
+                    'producto_id'    => $producto->id,
+                    'proveedor_id'   => $compra->proveedor_id ?? null,
+                    'compra_id'      => $compra->id,
+                    'precio_anterior' => $precioActual,
+                    'precio_nuevo'   => $precioNuevo,
+                    'unidad_base'    => $unidadBaseCatalogo,
+                ]);
+            }
+
+            $producto->precio_compra = $precioNuevo;
             $producto->save();
         }
     }

@@ -86,17 +86,17 @@ class KardexMovimiento extends Model
 
     public function scopeEntradas($query)
     {
-        return $query->where('tipo_movimiento', 'entrada');
+        return $query->whereIn('tipo_movimiento', ['entrada', 'entrada_compra', 'ajuste_entrada']);
     }
 
     public function scopeSalidas($query)
     {
-        return $query->where('tipo_movimiento', 'salida');
+        return $query->whereIn('tipo_movimiento', ['salida', 'salida_venta', 'ajuste_salida', 'merma_novedad']);
     }
 
     public function scopeAjustes($query)
     {
-        return $query->where('tipo_movimiento', 'ajuste');
+        return $query->whereIn('tipo_movimiento', ['ajuste_entrada', 'ajuste_salida']);
     }
 
     public function scopeEntreFechas($query, $desde, $hasta)
@@ -111,9 +111,8 @@ class KardexMovimiento extends Model
     public function getTipoColorAttribute(): string
     {
         return match($this->tipo_movimiento) {
-            'entrada' => 'success',
-            'salida' => 'danger',
-            'ajuste' => 'warning',
+            'entrada', 'entrada_compra', 'ajuste_entrada' => 'success',
+            'salida', 'salida_venta', 'ajuste_salida', 'merma_novedad' => 'danger',
             default => 'gray',
         };
     }
@@ -121,9 +120,9 @@ class KardexMovimiento extends Model
     public function getTipoIconoAttribute(): string
     {
         return match($this->tipo_movimiento) {
-            'entrada' => '⬆️',
-            'salida' => '⬇️',
-            'ajuste' => '🔄',
+            'entrada', 'entrada_compra' => '⬆️',
+            'salida', 'salida_venta', 'merma_novedad' => '⬇️',
+            'ajuste_entrada', 'ajuste_salida' => '🔄',
             default => '📌',
         };
     }
@@ -148,7 +147,7 @@ class KardexMovimiento extends Model
         return self::create([
             'sede_id' => $sedeId,
             'producto_id' => $productoId,
-            'tipo_movimiento' => 'entrada',
+            'tipo_movimiento' => 'entrada_compra',
             'cantidad' => $cantidad,
             'saldo_anterior' => $saldoAnterior,
             'saldo_despues' => $saldoNuevo,
@@ -177,7 +176,7 @@ class KardexMovimiento extends Model
         return self::create([
             'sede_id' => $sedeId,
             'producto_id' => $productoId,
-            'tipo_movimiento' => 'salida',
+            'tipo_movimiento' => 'salida_venta',
             'cantidad' => $cantidad,
             'saldo_anterior' => $saldoAnterior,
             'saldo_despues' => $saldoNuevo,
@@ -206,12 +205,12 @@ class KardexMovimiento extends Model
         return self::create([
             'sede_id' => $sedeId,
             'producto_id' => $productoId,
-            'tipo_movimiento' => 'ajuste',
-            'cantidad' => $cantidad,
+            'tipo_movimiento' => $cantidad >= 0 ? 'ajuste_entrada' : 'ajuste_salida',
+            'cantidad' => abs($cantidad),
             'saldo_anterior' => $saldoAnterior,
             'saldo_despues' => $saldoNuevo,
             'costo_unitario' => $costoUnitario,
-            'costo_total' => $costoUnitario ? $cantidad * $costoUnitario : null,
+            'costo_total' => $costoUnitario ? abs($cantidad) * $costoUnitario : null,
             'documento_origen_type' => get_class($documentoOrigen),
             'documento_origen_id' => $documentoOrigen->id,
             'notas' => $notas,
