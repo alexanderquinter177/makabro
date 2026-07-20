@@ -46,6 +46,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'inventario_sede' => array_merge($estandar, ['exportar']),
             'kardex'          => array_merge($estandar, ['exportar', 'pdf', 'reporte']),
             'inventario'      => array_merge($estandar, ['aprobar', 'rechazar', 'exportar', 'pdf']),
+            'novedad'         => array_merge($estandar, ['resolver', 'asignar', 'rechazar']),
 
             // ── Abastecimiento ───────────────────────────────────────────────────
             'proveedor'       => array_merge($estandar, ['cambiar_estado']),
