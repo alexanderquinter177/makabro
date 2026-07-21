@@ -211,12 +211,11 @@ class CompraForm
                                     ->helperText('Persona que recibe la mercancía'),
 
                                 FileUpload::make('imagen_factura')
-                                    ->label('Imagen/PDF de la Factura')
+                                    ->label('Documento / Soporte de Factura')
                                     ->disk('public')
                                     ->directory('compras/facturas')
-                                    ->acceptedFileTypes(['image/*', 'application/pdf'])
-                                    ->maxSize(5120)
-                                    ->placeholder('Suba la factura')
+                                    ->maxSize(10240)
+                                    ->placeholder('Suba la factura o documento soporte (cualquier formato)')
                                     ->downloadable()
                                     ->openable()
                                     ->visible(fn ($record) => $record === null || $record->status === 'borrador'),
@@ -275,11 +274,20 @@ class CompraForm
                                                     $producto = Producto::find($state);
                                                     if ($producto) {
                                                         $precio = $producto->precio_compra ?? 0;
-                                                        $set('precio_unitario', $precio);
+                                                        $set('precio_unitario', number_format((float) $precio, 0, ',', '.'));
                                                         $set('unidad_compra', $producto->unidadCompra?->abreviatura ?? '---');
                                                         
                                                         $cantidad = floatval($get('cantidad') ?? 0);
-                                                        $set('total', round($cantidad * $precio, 2));
+                                                        $totalCalc = round($cantidad * $precio, 0);
+                                                        $set('total', number_format($totalCalc, 0, ',', '.'));
+
+                                                        $items = $get('../../items') ?? [];
+                                                        $grandTotal = 0;
+                                                        foreach ($items as $item) {
+                                                            $grandTotal += floatval(str_replace('.', '', $item['total'] ?? 0));
+                                                        }
+                                                        $set('../../subtotal', number_format($grandTotal, 0, ',', '.'));
+                                                        $set('../../total', number_format($grandTotal, 0, ',', '.'));
                                                     }
                                                 }
                                             }),
@@ -357,10 +365,19 @@ class CompraForm
                                                          
                                                          $precioBase = $producto->precio_compra ?? 0;
                                                          $nuevoPrecio = $precioBase * $factor;
-                                                         $set('precio_unitario', $nuevoPrecio);
+                                                         $set('precio_unitario', number_format((float) $nuevoPrecio, 0, ',', '.'));
                                                          
                                                          $cantidad = floatval($get('cantidad') ?? 0);
-                                                         $set('total', round($cantidad * $nuevoPrecio, 2));
+                                                         $totalCalc = round($cantidad * $nuevoPrecio, 0);
+                                                         $set('total', number_format($totalCalc, 0, ',', '.'));
+
+                                                         $items = $get('../../items') ?? [];
+                                                         $grandTotal = 0;
+                                                         foreach ($items as $item) {
+                                                             $grandTotal += floatval(str_replace('.', '', $item['total'] ?? 0));
+                                                         }
+                                                         $set('../../subtotal', number_format($grandTotal, 0, ',', '.'));
+                                                         $set('../../total', number_format($grandTotal, 0, ',', '.'));
                                                      }
                                                  }
                                              }),
@@ -372,7 +389,7 @@ class CompraForm
                                             ->validationAttribute('Cantidad')
                                             ->minValue(0.01)
                                             ->step(0.01)
-                                            ->live(onBlur: true)
+                                            ->live(debounce: 250)
                                             ->placeholder('0')
                                             ->prefixIcon('heroicon-o-calculator')
                                             ->columnSpan(2)
@@ -380,25 +397,43 @@ class CompraForm
                                                  $precioRaw = $get('precio_unitario') ?? 0;
                                                  $precio = floatval(str_replace('.', '', $precioRaw));
                                                  $cantidad = floatval($state);
-                                                 $set('total', round($cantidad * $precio, 2));
+                                                 $totalCalc = round($cantidad * $precio, 0);
+                                                 $set('total', number_format($totalCalc, 0, ',', '.'));
+
+                                                 $items = $get('../../items') ?? [];
+                                                 $grandTotal = 0;
+                                                 foreach ($items as $item) {
+                                                     $grandTotal += floatval(str_replace('.', '', $item['total'] ?? 0));
+                                                 }
+                                                 $set('../../subtotal', number_format($grandTotal, 0, ',', '.'));
+                                                 $set('../../total', number_format($grandTotal, 0, ',', '.'));
                                              }),
 
                                         TextInput::make('precio_unitario')
                                             ->label('Precio Unit.')
                                             ->required()
                                             ->validationAttribute('Precio Unitario')
-                                            ->live(onBlur: true)
+                                            ->live(debounce: 250)
                                             ->prefix('$')
                                             ->placeholder('0')
                                             ->columnSpan(2)
                                             ->mask(RawJs::make('$money($input, ",", ".", 0)'))
                                             ->dehydrateStateUsing(fn ($state) => $state !== null ? str_replace('.', '', $state) : null)
-                                            ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 0, ',', '.') : '')
+                                            ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) str_replace('.', '', $state), 0, ',', '.') : '')
                                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                                  $cantidadRaw = $get('cantidad') ?? 0;
                                                  $cantidad = floatval($cantidadRaw);
                                                  $precio = floatval(str_replace('.', '', $state));
-                                                 $set('total', round($cantidad * $precio, 2));
+                                                 $totalCalc = round($cantidad * $precio, 0);
+                                                 $set('total', number_format($totalCalc, 0, ',', '.'));
+
+                                                 $items = $get('../../items') ?? [];
+                                                 $grandTotal = 0;
+                                                 foreach ($items as $item) {
+                                                     $grandTotal += floatval(str_replace('.', '', $item['total'] ?? 0));
+                                                 }
+                                                 $set('../../subtotal', number_format($grandTotal, 0, ',', '.'));
+                                                 $set('../../total', number_format($grandTotal, 0, ',', '.'));
                                              }),
 
                                         TextInput::make('total')
@@ -411,7 +446,7 @@ class CompraForm
                                             ->columnSpan(2)
                                             ->mask(RawJs::make('$money($input, ",", ".", 0)'))
                                             ->dehydrateStateUsing(fn ($state) => $state !== null ? str_replace('.', '', $state) : null)
-                                            ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 0, ',', '.') : ''),
+                                            ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) str_replace('.', '', $state), 0, ',', '.') : ''),
                                     ])
                                     ->columnSpanFull(),
                             ])
@@ -420,15 +455,15 @@ class CompraForm
                             ->columnSpanFull()
                             ->extraAttributes(['class' => 'bg-gray-50 dark:bg-gray-800 rounded-xl'])
                             ->live()
-                                    ->afterStateUpdated(function (callable $set, callable $get) {
+                            ->afterStateUpdated(function (callable $set, callable $get) {
                                  $items = $get('items') ?? [];
                                  $subtotal = 0;
                                  foreach ($items as $item) {
                                      $itemTotal = floatval(str_replace('.', '', $item['total'] ?? 0));
                                      $subtotal += $itemTotal;
                                  }
-                                 $set('subtotal', $subtotal);
-                                 $set('total', $subtotal);
+                                 $set('subtotal', number_format($subtotal, 0, ',', '.'));
+                                 $set('total', number_format($subtotal, 0, ',', '.'));
                              }),
                     ])
                     ->columnSpanFull(),

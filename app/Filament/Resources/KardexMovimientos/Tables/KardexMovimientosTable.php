@@ -54,18 +54,18 @@ class KardexMovimientosTable
 
                 TextColumn::make('saldo_anterior')
                     ->label('Saldo Anterior')
-                    ->numeric(4)
+                    ->formatStateUsing(fn ($state) => $state !== null ? rtrim(rtrim(number_format((float) $state, 4, ',', '.'), '0'), ',') : '0')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false),
 
                 TextColumn::make('cantidad')
                     ->label('Cantidad')
-                    ->numeric(4)
+                    ->formatStateUsing(fn ($state) => $state !== null ? rtrim(rtrim(number_format((float) $state, 4, ',', '.'), '0'), ',') : '0')
                     ->sortable(),
 
                 TextColumn::make('saldo_despues')
                     ->label('Saldo Después')
-                    ->numeric(4)
+                    ->formatStateUsing(fn ($state) => $state !== null ? rtrim(rtrim(number_format((float) $state, 4, ',', '.'), '0'), ',') : '0')
                     ->sortable(),
 
                 TextColumn::make('costo_unitario')
