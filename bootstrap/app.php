@@ -4,27 +4,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
-/* 
- |--------------------------------------------------------------------------
- | Auto-crear carpetas del Storage (Ideal para Docker/Railway/Volúmenes)
- |--------------------------------------------------------------------------
- */
-$storagePaths = [
-    storage_path('app/public'),
-    storage_path('app/livewire-tmp'),
-    storage_path('framework/cache/data'),
-    storage_path('framework/sessions'),
-    storage_path('framework/views'),
-    storage_path('logs'),
-];
-
-foreach ($storagePaths as $path) {
-    if (!is_dir($path)) {
-        @mkdir($path, 0755, true);
-    }
-}
-
-return Application::configure(basePath: dirname(__DIR__))
+// 1. Instanciar la aplicación primero
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
@@ -36,3 +17,29 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
+
+/* 
+ |--------------------------------------------------------------------------
+ | Auto-crear carpetas del Storage (Ideal para Docker/Railway/Volúmenes)
+ |--------------------------------------------------------------------------
+ | Ejecutado DESPUÉS de instanciar la app para evitar errores 255 
+ | durante php artisan config:cache
+ |--------------------------------------------------------------------------
+ */
+$storagePaths = [
+    $app->storagePath('app/public'),
+    $app->storagePath('app/livewire-tmp'),
+    $app->storagePath('framework/cache/data'),
+    $app->storagePath('framework/sessions'),
+    $app->storagePath('framework/views'),
+    $app->storagePath('logs'),
+];
+
+foreach ($storagePaths as $path) {
+    if (!is_dir($path)) {
+        @mkdir($path, 0755, true);
+    }
+}
+
+// 2. Retornar la aplicación
+return $app;
