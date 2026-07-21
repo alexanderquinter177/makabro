@@ -10,7 +10,14 @@ class DistribucionMermasWidget extends ChartWidget
 {
     protected static ?int $sort = 3;
 
-    protected int | string | array $columnSpan = 1;
+    protected int | string | array $columnSpan = [
+        'default' => 'full',
+        'sm'      => 'full',
+        'md'      => 1,
+        'lg'      => 1,
+        'xl'      => 1,
+        '2xl'     => 1,
+    ];
 
     // Propiedades de instancia — tal como las define ChartWidget base
     protected ?string $heading = 'Distribución de Mermas del Mes';

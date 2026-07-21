@@ -138,12 +138,23 @@ class ProductoForm
                                     ->label(fn ($get) => $get('tipo') === 'insumo' ? 'PRECIO DE COMPRA' : 'PRECIO DE VENTA ACTUAL')
                                     ->default(0)
                                     ->prefix('$')
-                                    ->placeholder('0,00')
+                                    ->placeholder('0')
                                     ->prefixIcon('heroicon-o-currency-dollar')
-                                    ->mask(RawJs::make('$money($input, \',\', \'.\', 2)'))
-                                    ->stripCharacters('.')
-                                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 2, ',', '.') : '')
-                                    ->dehydrateStateUsing(fn ($state) => $state ? floatval(str_replace(['.', ','], ['', '.'], $state)) : 0)
+                                    ->mask(RawJs::make('$money($input, ",", ".", 0)'))
+                                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 0, ',', '.') : '')
+                                    ->dehydrateStateUsing(function ($state) {
+                                        if ($state === null || $state === '') return 0;
+                                        if (is_numeric($state)) return (float) $state;
+                                        $clean = str_replace(['$', ' '], '', (string)$state);
+                                        if (str_contains($clean, ',') && str_contains($clean, '.')) {
+                                            $clean = str_replace('.', '', $clean);
+                                            $clean = str_replace(',', '.', $clean);
+                                        } else {
+                                            $clean = str_replace('.', '', $clean);
+                                            $clean = str_replace(',', '.', $clean);
+                                        }
+                                        return floatval($clean);
+                                    })
                                     ->live(onBlur: true)
                                     ->visible(fn (callable $get) => in_array($get('tipo'), ['venta', 'insumo'])),
 
@@ -346,8 +357,21 @@ class ProductoForm
                                     }
                                 }
 
-                                $tipo = $get('tipo');
-                                $precioVenta = floatval(str_replace(['$', ',', '.'], '', $get('precio_compra') ?? '0'));
+                                $rawPrecioVenta = $get('precio_compra') ?? '0';
+                                if (is_numeric($rawPrecioVenta)) {
+                                    $precioVenta = floatval($rawPrecioVenta);
+                                } else {
+                                    $cleanP = str_replace(['$', ' '], '', (string)$rawPrecioVenta);
+                                    if (str_contains($cleanP, ',') && str_contains($cleanP, '.')) {
+                                        $cleanP = str_replace('.', '', $cleanP);
+                                        $cleanP = str_replace(',', '.', $cleanP);
+                                    } elseif (str_contains($cleanP, ',')) {
+                                        $cleanP = str_replace(',', '.', $cleanP);
+                                    } else {
+                                        $cleanP = str_replace('.', '', $cleanP);
+                                    }
+                                    $precioVenta = floatval($cleanP);
+                                }
                                 $porcentajeCosto = $precioVenta > 0 ? ($totalCosto / $precioVenta) * 100 : 0;
                                 $beneficio = $precioVenta - $totalCosto;
 

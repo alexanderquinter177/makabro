@@ -11,7 +11,14 @@ class TendenciaComprasMermasWidget extends ChartWidget
 {
     protected static ?int $sort = 2;
 
-    protected int | string | array $columnSpan = 1;
+    protected int | string | array $columnSpan = [
+        'default' => 'full',
+        'sm'      => 'full',
+        'md'      => 1,
+        'lg'      => 1,
+        'xl'      => 1,
+        '2xl'     => 1,
+    ];
 
     // Propiedades de instancia (no estáticas) — tal como las define ChartWidget base
     protected ?string $heading = 'Tendencia: Compras vs Mermas';

@@ -12,7 +12,9 @@ class TopProductosTableWidget extends BaseTableWidget
 {
     protected static ?int $sort = 4;
 
-    protected static ?string $heading = '🏆 Top 10 Productos Más Consumidos';
+    protected string $view = 'filament.widgets.top-productos-widget';
+
+    protected static ?string $heading = '';
 
     protected int | string | array $columnSpan = 'full';
 
@@ -32,30 +34,33 @@ class TopProductosTableWidget extends BaseTableWidget
 
         $query = SalesReportImportItem::query();
         $query->getModel()->setTable('top_products');
-        $query->fromSub($subQuery, 'top_products');
+        $query->fromSub($subQuery, 'top_products')
+            ->orderBy('total_cantidad', 'desc')
+            ->take(10);
 
         return $table
             ->query($query)
             ->columns([
                 TextColumn::make('producto_nombre')
-                    ->label('Nombre del Producto')
+                    ->label('Producto')
                     ->searchable()
                     ->weight('bold'),
 
                 TextColumn::make('total_cantidad')
-                    ->label('Cantidad Vendida')
+                    ->label('Vendido')
                     ->numeric(2)
                     ->badge()
                     ->color('primary')
                     ->sortable(),
 
                 TextColumn::make('total_venta')
-                    ->label('Valor Total de Ventas')
+                    ->label('Valor ($)')
                     ->numeric(2)
                     ->prefix('$')
                     ->weight('semibold')
                     ->color('success')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('total_cantidad', 'desc')
             ->paginated(false);

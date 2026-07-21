@@ -41,7 +41,7 @@ class AlertasInventarioWidget extends BaseWidget
                     ->icon('heroicon-o-cube'),
 
                 Tables\Columns\TextColumn::make('cantidad_actual')
-                    ->label('Stock Actual')
+                    ->label('Stock')
                     ->numeric(decimalPlaces: 2)
                     ->sortable()
                     ->badge()
@@ -50,23 +50,8 @@ class AlertasInventarioWidget extends BaseWidget
                         : 'warning'
                     ),
 
-                Tables\Columns\TextColumn::make('stock_minimo')
-                    ->label('Stock Mínimo')
-                    ->numeric(decimalPlaces: 2)
-                    ->color('gray'),
-
-                Tables\Columns\TextColumn::make('punto_reorden')
-                    ->label('Punto de Reorden')
-                    ->numeric(decimalPlaces: 2)
-                    ->color('gray'),
-
-                Tables\Columns\TextColumn::make('stock_maximo')
-                    ->label('Stock Máximo')
-                    ->numeric(decimalPlaces: 2)
-                    ->color('gray'),
-
                 Tables\Columns\TextColumn::make('sugerido_compra')
-                    ->label('Sugerido a Comprar')
+                    ->label('A Comprar')
                     ->state(fn ($record) => $record->sugerido_compra)
                     ->numeric(decimalPlaces: 2)
                     ->sortable(false)
@@ -78,6 +63,24 @@ class AlertasInventarioWidget extends BaseWidget
                     ->label('Unidad')
                     ->badge()
                     ->color('info'),
+
+                Tables\Columns\TextColumn::make('stock_minimo')
+                    ->label('Mín.')
+                    ->numeric(decimalPlaces: 2)
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('punto_reorden')
+                    ->label('Reorden')
+                    ->numeric(decimalPlaces: 2)
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('stock_maximo')
+                    ->label('Máx.')
+                    ->numeric(decimalPlaces: 2)
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->striped()
             ->paginated([8, 15, 25])

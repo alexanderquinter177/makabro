@@ -42,19 +42,6 @@ class CambiosPrecioTableWidget extends BaseTableWidget
                     ->searchable()
                     ->weight('bold'),
 
-                TextColumn::make('proveedor.nombre')
-                    ->label('Proveedor')
-                    ->searchable()
-                    ->default('—')
-                    ->badge()
-                    ->color('gray'),
-
-                TextColumn::make('precio_anterior')
-                    ->label('Precio Ant.')
-                    ->numeric(2)
-                    ->prefix('$')
-                    ->color('gray'),
-
                 TextColumn::make('precio_nuevo')
                     ->label('Precio Nuevo')
                     ->numeric(2)
@@ -70,14 +57,31 @@ class CambiosPrecioTableWidget extends BaseTableWidget
                     ->color(fn ($state) => $state > 0 ? 'danger' : 'success')
                     ->icon(fn ($state) => $state > 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down'),
 
+                TextColumn::make('proveedor.nombre')
+                    ->label('Proveedor')
+                    ->searchable()
+                    ->default('—')
+                    ->badge()
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('precio_anterior')
+                    ->label('Precio Ant.')
+                    ->numeric(2)
+                    ->prefix('$')
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('variacion')
                     ->label('Variación')
                     ->state(fn ($record) => $record->variacion_porcentual)
                     ->suffix('%')
                     ->badge()
-                    ->color(fn ($state) => $state > 0 ? 'danger' : 'success'),
+                    ->color(fn ($state) => $state > 0 ? 'danger' : 'success')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('created_at', 'desc')
-            ->paginated(false);
+            ->paginated([8, 15])
+            ->defaultPaginationPageOption(8);
     }
 }
