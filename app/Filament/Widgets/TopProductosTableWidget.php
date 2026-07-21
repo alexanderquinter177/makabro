@@ -30,10 +30,12 @@ class TopProductosTableWidget extends BaseTableWidget
             ->selectRaw('MIN(id) as id, producto_nombre, SUM(cantidad_venta) as total_cantidad, SUM(venta_neta) as total_venta')
             ->groupBy('producto_nombre');
 
+        $query = SalesReportImportItem::query();
+        $query->getModel()->setTable('top_products');
+        $query->fromSub($subQuery, 'top_products');
+
         return $table
-            ->query(
-                SalesReportImportItem::query()->fromSub($subQuery, 'top_products')
-            )
+            ->query($query)
             ->columns([
                 TextColumn::make('producto_nombre')
                     ->label('Nombre del Producto')
