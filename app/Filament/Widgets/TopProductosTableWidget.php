@@ -12,7 +12,10 @@ class TopProductosTableWidget extends BaseTableWidget
 {
     protected static ?int $sort = 4;
 
-    protected string $view = 'filament.widgets.top-productos-widget';
+    public function getView(): string
+    {
+        return 'filament.widgets.top-productos-widget';
+    }
 
     protected static ?string $heading = '';
 

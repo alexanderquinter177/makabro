@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             UnidadesMedidaSeeder::class,
             CategoriasSeeder::class,
             ProductosSeeder::class,
+            SubRecetasSeeder::class,
            
         ]);
         

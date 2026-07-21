@@ -215,10 +215,12 @@ class CompraForm
                                     ->disk('public')
                                     ->directory('compras/facturas')
                                     ->maxSize(10240)
-                                    ->placeholder('Suba la factura o documento soporte (cualquier formato)')
+                                    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+                                    ->placeholder('Suba la factura o soporte (PDF o imagen)')
                                     ->downloadable()
                                     ->openable()
-                                    ->visible(fn ($record) => $record === null || $record->status === 'borrador'),
+                                    ->previewable(false)
+                                    ->hidden(fn ($record) => $record !== null && $record->status !== 'borrador'),
 
                                 Placeholder::make('ver_factura')
                                     ->label('Documento Soporte (Factura)')
@@ -229,6 +231,7 @@ class CompraForm
                                         </a>'
                                     ) : 'No se cargó ningún documento soporte para esta compra.')
                                     ->visible(fn ($record) => $record !== null && $record->status !== 'borrador'),
+
 
                                
                              ])
