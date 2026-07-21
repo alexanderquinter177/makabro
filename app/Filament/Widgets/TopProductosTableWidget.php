@@ -6,7 +6,6 @@ use App\Models\Inventory\SalesReportImportItem;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseTableWidget;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 class TopProductosTableWidget extends BaseTableWidget
@@ -23,17 +22,17 @@ class TopProductosTableWidget extends BaseTableWidget
         $inicioMesActual = Carbon::now()->startOfMonth();
         $finMesActual    = Carbon::now()->endOfMonth();
 
+        $subQuery = SalesReportImportItem::query()
+            ->whereHas('import', function ($q) use ($sedeId, $inicioMesActual, $finMesActual) {
+                $q->when($sedeId, fn ($q2) => $q2->where('sede_id', $sedeId))
+                  ->whereBetween('created_at', [$inicioMesActual, $finMesActual]);
+            })
+            ->selectRaw('MIN(id) as id, producto_nombre, SUM(cantidad_venta) as total_cantidad, SUM(venta_neta) as total_venta')
+            ->groupBy('producto_nombre');
+
         return $table
             ->query(
-                SalesReportImportItem::query()
-                    ->whereHas('import', function ($q) use ($sedeId, $inicioMesActual, $finMesActual) {
-                        $q->when($sedeId, fn ($q2) => $q2->where('sede_id', $sedeId))
-                          ->whereBetween('created_at', [$inicioMesActual, $finMesActual]);
-                    })
-                    ->selectRaw('MIN(id) as id, producto_nombre, SUM(cantidad_venta) as total_cantidad, SUM(venta_neta) as total_venta')
-                    ->groupBy('producto_nombre')
-                    ->orderByRaw('SUM(cantidad_venta) DESC')
-                    ->limit(10)
+                SalesReportImportItem::query()->fromSub($subQuery, 'top_products')
             )
             ->columns([
                 TextColumn::make('producto_nombre')
