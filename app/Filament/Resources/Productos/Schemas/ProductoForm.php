@@ -135,7 +135,7 @@ class ProductoForm
                         Grid::make(['default' => 1, 'sm' => 2, 'md' => 3])
                             ->schema([
                                 TextInput::make('precio_compra')
-                                    ->label(fn ($get) => $get('tipo') === 'insumo' ? 'PRECIO DE COMPRA' : 'PRECIO DE VENTA ACTUAL')
+                                    ->label(fn ($get, $record) => ($get('tipo') ?? $record?->tipo ?? $forceTipo) === 'insumo' ? 'PRECIO DE COMPRA' : 'PRECIO DE VENTA ACTUAL')
                                     ->default(0)
                                     ->prefix('$')
                                     ->placeholder('0')
@@ -156,7 +156,7 @@ class ProductoForm
                                         return floatval($clean);
                                     })
                                     ->live(onBlur: true)
-                                    ->visible(fn (callable $get) => in_array($get('tipo'), ['venta', 'insumo'])),
+                                    ->visible(fn (callable $get, $record) => in_array($get('tipo') ?? $record?->tipo ?? $forceTipo, ['venta', 'insumo'])),
 
                                 TextInput::make('proveedor_habitual')
                                     ->label('PROVEEDOR HABITUAL')
@@ -165,7 +165,7 @@ class ProductoForm
                                     ->prefixIcon('heroicon-o-truck')
                                     ->formatStateUsing(fn ($state) => strtoupper($state))
                                     ->afterStateUpdated(fn ($set, $state) => $set('proveedor_habitual', strtoupper($state)))
-                                    ->visible(fn (callable $get) => $get('tipo') === 'insumo'),
+                                    ->visible(fn (callable $get, $record) => ($get('tipo') ?? $record?->tipo ?? $forceTipo) === 'insumo'),
 
                                 Toggle::make('activo')
                                     ->label('PRODUCTO ACTIVO')
@@ -194,7 +194,7 @@ class ProductoForm
                 Section::make('RECETA / INGREDIENTES (BOM)')
                     ->icon('heroicon-o-beaker')
                     ->description('Defina la composición de ingredientes y cantidades para elaborar este producto')
-                    ->visible(fn (callable $get) => in_array($get('tipo'), ['venta', 'subensamble']))
+                    ->visible(fn (callable $get, $record) => in_array($get('tipo') ?? $record?->tipo ?? $forceTipo, ['venta', 'subensamble']))
                     ->schema([
                         Repeater::make('componentes')
                             ->relationship('componentes')
@@ -328,11 +328,12 @@ class ProductoForm
                 Section::make('RENTABILIDAD Y ESTRUCTURA DE COSTOS')
                     ->icon('heroicon-o-chart-bar')
                     ->description('Análisis financiero detallado de la receta (Food Cost %, margen y utilidad)')
-                    ->visible(fn (callable $get) => in_array($get('tipo'), ['venta', 'subensamble']))
+                    ->visible(fn (callable $get, $record) => in_array($get('tipo') ?? $record?->tipo ?? $forceTipo, ['venta', 'subensamble']))
                     ->schema([
                         Placeholder::make('resumen_costos')
                             ->label('')
-                            ->content(function ($get) {
+                            ->content(function ($get, $record) use ($forceTipo) {
+                                $tipo = $get('tipo') ?? $record?->tipo ?? $forceTipo;
                                 $componentes = $get('componentes') ?? [];
                                 $totalCosto = 0;
 
