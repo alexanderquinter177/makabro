@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             CategoriasSeeder::class,
             ProductosSeeder::class,
             SubRecetasSeeder::class,
+            RecetaSeeder::class,           
            
         ]);
         
