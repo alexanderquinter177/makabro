@@ -12,19 +12,7 @@ class CategoriasSeeder extends Seeder
 {
     public function run()
     {
-        // Desactivar verificaciones de clave foránea
-        if (DB::connection()->getDriverName() === 'mysql') {
-            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        }
-
-        Categoria::truncate();
-        UnidadMedida::truncate();
-
-        if (DB::connection()->getDriverName() === 'mysql') {
-            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-        }
-
-        // 🔥 CREAR CATEGORÍAS
+               // 🔥 CREAR CATEGORÍAS
         $this->crearCategorias();
         
         // 🔥 CREAR UNIDADES DE MEDIDA

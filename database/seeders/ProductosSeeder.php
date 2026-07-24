@@ -25,10 +25,6 @@ class ProductosSeeder extends Seeder
             return;
         }
 
-        // ✅ Limpiar la tabla correctamente
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        DB::table('productos')->truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $productos = $this->getProductos();
 
@@ -517,14 +513,14 @@ class ProductosSeeder extends Seeder
 
         // ===== RENDIMIENTO =====
         
-            ['nombre' => 'Rend bondiola de cerdo', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '28.57'],
-            ['nombre' => 'Rend zumo de Naranja', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '8.50'],
-            ['nombre' => 'Rend zumo de Maracuya', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '19.50'],
-            ['nombre' => 'Rend zumo de limón', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '12.77'],
-            ['nombre' => 'Rend Cilantro', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '6.50'],
-            ['nombre' => 'Rend mango tommy', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '14.00'],
-            ['nombre' => 'Rend aguacate hass', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '15.32'],
-            ['nombre' => 'Rend piña oro miel', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '4.50'],
+            ['nombre' => 'Rend bondiola de cerdo', 'categoria' => 'Rendimiento', 'unidad' => 'gr', 'precio' => '28.57'],
+            ['nombre' => 'Rend zumo de Naranja', 'categoria' => 'Rendimiento', 'unidad' => 'gr', 'precio' => '8.50'],
+            ['nombre' => 'Rend zumo de Maracuya', 'categoria' => 'Rendimiento', 'unidad' => 'gr', 'precio' => '19.50'],
+            ['nombre' => 'Rend zumo de limón', 'categoria' => 'Rendimiento', 'unidad' => 'gr', 'precio' => '12.77'],
+            ['nombre' => 'Rend Cilantro', 'categoria' => 'Rendimiento', 'unidad' => 'gr', 'precio' => '6.50'],
+            ['nombre' => 'Rend mango tommy', 'categoria' => 'Rendimiento', 'unidad' => 'gr', 'precio' => '14.00'],
+            ['nombre' => 'Rend aguacate hass', 'categoria' => 'Rendimiento', 'unidad' => 'gr', 'precio' => '15.32'],
+            ['nombre' => 'Rend piña oro miel', 'categoria' => 'Rendimiento', 'unidad' => 'gr', 'precio' => '4.50'],
         
 
         // ===== SALSAS =====

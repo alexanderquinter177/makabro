@@ -67,8 +67,8 @@ class SedesSeeder extends Seeder
                 'activo' => true,
             ],
             [
-                'nombre' => 'LA BRASA',
-                'codigo' => 'LBR',
+                'nombre' => 'LA GRASA',
+                'codigo' => 'LGR',
                 'marca' => 'La Grasa/Brusco',
                 'activo' => true,
             ],
