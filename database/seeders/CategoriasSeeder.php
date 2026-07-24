@@ -39,18 +39,22 @@ class CategoriasSeeder extends Seeder
     private function crearCategorias(): void
     {
         $categorias = [
-            'Frutas y verduras',
+            'Aceites y abarrotes',
             'Aves',
+            'Bebidas',
             'Carnes',
             'Especias',
-            'Lácteos',
-            'Quesos',
-            'Salsas',
-            'Aceites y abarrotes',
+            'Frutas',
+            'Frutas y verduras',
             'Harinas y panadería',
-            'Bebidas',
+            'Lácteos',
             'Otros',
+            'Quesos',
+            'Rendimiento',
+            'Salsas',
+            'Sub receta',
         ];
+        
 
         $contador = 0;
         foreach ($categorias as $nombre) {

@@ -21,7 +21,7 @@ class UnidadesMedidaSeeder extends Seeder
         $unidades = [
             [
                 'nombre' => 'Gramo',
-                'abreviatura' => 'g',
+                'abreviatura' => 'gr',
                 'created_by' => 1,
                 'updated_by' => 1,
                 'created_at' => now(),

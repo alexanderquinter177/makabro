@@ -34,7 +34,7 @@ class SubRecetasSeeder extends Seeder
         // ========================================
         $this->crearSubreceta('SUB SALSA HAMBURGUESERA', $categoriaSubrecetas->id, [
             ['nombre' => 'Mayonesa', 'cantidad' => 500],
-            ['nombre' => 'Aderezo bbq', 'cantidad' => 50],
+            ['nombre' => 'Aderezo Bbq', 'cantidad' => 50],
             ['nombre' => 'Vinagre blanco', 'cantidad' => 20],
             ['nombre' => 'Rend zumo de limón', 'cantidad' => 20],
             ['nombre' => 'Paprika', 'cantidad' => 2],
@@ -85,10 +85,31 @@ class SubRecetasSeeder extends Seeder
         ]);
 
         // ========================================
-        // 5. SUB BBQ DE TAMARINDO Y RON
+        // SUB MAYONESA CHIMICHURRÍ (NUEVA)
         // ========================================
-        $this->crearSubreceta('SUB BBQ DE TAMARINDO Y RON', $categoriaSubrecetas->id, [
-            ['nombre' => 'Aderezo bbq', 'cantidad' => 1000],
+        $this->crearSubreceta('SUB MAYONESA CHIMICHURRÍ', $categoriaSubrecetas->id, [
+            ['nombre' => 'Mayonesa', 'cantidad' => 500],
+            ['nombre' => 'Sub chimichurri', 'cantidad' => 100],
+            ['nombre' => 'Mostaza', 'cantidad' => 30],
+            ['nombre' => 'Azucar blanca', 'cantidad' => 20],
+            ['nombre' => 'Rend zumo de limón', 'cantidad' => 30],
+        ]);
+
+        // ========================================
+        // SUB MAYO SWEET CHILLI (NUEVA)
+        // ========================================
+        $this->crearSubreceta('SUB MAYO SWEET CHILLI', $categoriaSubrecetas->id, [
+            ['nombre' => 'Sweet Chilly Sauce', 'cantidad' => 150],
+            ['nombre' => 'Mayonesa', 'cantidad' => 500],
+            ['nombre' => 'Rend zumo de limón', 'cantidad' => 20],
+            ['nombre' => 'Sal común', 'cantidad' => 2],
+            ['nombre' => 'Pimienta negra', 'cantidad' => 0.5],
+        ]);
+        // ========================================
+        // 5. SUB Bbq DE TAMARINDO Y RON
+        // ========================================
+        $this->crearSubreceta('SUB Bbq DE TAMARINDO Y RON', $categoriaSubrecetas->id, [
+            ['nombre' => 'Aderezo Bbq', 'cantidad' => 1000],
             ['nombre' => 'Rend zumo de Naranja', 'cantidad' => 200],
             ['nombre' => 'Azucar blanca', 'cantidad' => 300],
             ['nombre' => 'Ron Cortez Oro', 'cantidad' => 100],
@@ -127,7 +148,7 @@ class SubRecetasSeeder extends Seeder
         // ========================================
         $this->crearSubreceta('SUB CHUTNEY DE MANGO', $categoriaSubrecetas->id, [
             ['nombre' => 'Mango tommy', 'cantidad' => 200],
-            ['nombre' => 'Rend zumo de maracuya', 'cantidad' => 200],
+            ['nombre' => 'Rend zumo de Maracuya', 'cantidad' => 200],
             ['nombre' => 'Cebolla blanca', 'cantidad' => 30],
             ['nombre' => 'Pimenton rojo', 'cantidad' => 30],
             ['nombre' => 'Vinagre blanco', 'cantidad' => 200],
@@ -181,7 +202,7 @@ class SubRecetasSeeder extends Seeder
             ['nombre' => 'Achiote molido', 'cantidad' => 150],
             ['nombre' => 'Oregano escamas', 'cantidad' => 20],
             ['nombre' => 'Ajo Pelado', 'cantidad' => 60],
-            ['nombre' => 'Rend zumo de naranja', 'cantidad' => 1000],
+            ['nombre' => 'Rend zumo de Naranja', 'cantidad' => 1000],
             ['nombre' => 'Vinagre de manzana', 'cantidad' => 500],
             ['nombre' => 'Sal común', 'cantidad' => 150],
             ['nombre' => 'Chile guajillo', 'cantidad' => 20],
@@ -207,13 +228,16 @@ class SubRecetasSeeder extends Seeder
         // ========================================
         // 14. SUB GUACAMOLE
         // ========================================
+       // ========================================
+        // SUB GUACAMOLE (ACTUALIZADO)
+        // ========================================
         $this->crearSubreceta('SUB GUACAMOLE', $categoriaSubrecetas->id, [
-            ['nombre' => 'Aguacate Hass', 'cantidad' => 300],
+            ['nombre' => 'Rend aguacate hass', 'cantidad' => 300],
             ['nombre' => 'Cebolla blanca', 'cantidad' => 20],
-            ['nombre' => 'Cilantro', 'cantidad' => 30],
+            ['nombre' => 'Rend cilantro', 'cantidad' => 30],
             ['nombre' => 'Tomate chonto', 'cantidad' => 20],
             ['nombre' => 'Rend zumo de limón', 'cantidad' => 50],
-            ['nombre' => 'Mango tommy', 'cantidad' => 20],
+            ['nombre' => 'Rend mango tommy', 'cantidad' => 20],
             ['nombre' => 'Sal común', 'cantidad' => 2],
             ['nombre' => 'Pimienta negra', 'cantidad' => 1],
         ]);
@@ -236,7 +260,7 @@ class SubRecetasSeeder extends Seeder
             ['nombre' => 'Pimenton rojo', 'cantidad' => 180],
             ['nombre' => 'Pimienta negra', 'cantidad' => 3],
             ['nombre' => 'Sal común', 'cantidad' => 10],
-            ['nombre' => 'Aderezo bbq', 'cantidad' => 200],
+            ['nombre' => 'Aderezo Bbq', 'cantidad' => 200],
             ['nombre' => 'Segu olle tinto', 'cantidad' => 40],
         ]);
 
@@ -284,7 +308,7 @@ class SubRecetasSeeder extends Seeder
         // ========================================
         // 19. SUB ZANAHORIA ENCURTIDA
         // ========================================
-        $this->crearSubreceta('SUB ZANAHORIA ENCURTIDA', $categoriaSubrecetas->id, [
+         $this->crearSubreceta('SUB ZANAHORIA ENCURTIDA', $categoriaSubrecetas->id, [
             ['nombre' => 'Zanahoria', 'cantidad' => 200],
             ['nombre' => 'Agua', 'cantidad' => 200],
             ['nombre' => 'Vinagre blanco', 'cantidad' => 30],
@@ -309,9 +333,20 @@ class SubRecetasSeeder extends Seeder
             ['nombre' => 'Pimienta negra', 'cantidad' => 1],
         ]);
 
+        // ========================================
+        // SUB VINAGRETA DE GULUPA (NUEVA)
+        // ========================================
+        $this->crearSubreceta('SUB VINAGRETA DE GULUPA', $categoriaSubrecetas->id, [
+            ['nombre' => 'Sub salsa de gulupa', 'cantidad' => 200],
+            ['nombre' => 'Aceite bidón', 'cantidad' => 300],
+            ['nombre' => 'Mostaza', 'cantidad' => 30],
+            ['nombre' => 'Limon tahiti', 'cantidad' => 60],
+            ['nombre' => 'Sal común', 'cantidad' => 3],
+            ['nombre' => 'Pimienta negra', 'cantidad' => 1],
+        ]);
 
-
-                // ========================================
+        
+        // ========================================
         // 21. SUB MERMELADA DE TOCINETA
         // ========================================
         $this->crearSubreceta('SUB MERMELADA DE TOCINETA', $categoriaSubrecetas->id, [
@@ -331,7 +366,7 @@ class SubRecetasSeeder extends Seeder
             ['nombre' => 'Ajo pelado', 'cantidad' => 5],
             ['nombre' => 'Pimienta negra', 'cantidad' => 2],
             ['nombre' => 'Jalapeño verde', 'cantidad' => 10],
-            ['nombre' => 'Aji dulce', 'cantidad' => 15],
+            ['nombre' => 'Aji Dulce', 'cantidad' => 15],
         ]);
 
         // ========================================
@@ -368,7 +403,7 @@ class SubRecetasSeeder extends Seeder
             ['nombre' => 'Vinagre blanco', 'cantidad' => 200],
             ['nombre' => 'Agua', 'cantidad' => 1500],
             ['nombre' => 'Antioqueño rojo botella', 'cantidad' => 100],
-            ['nombre' => 'Ralladura de naranja', 'cantidad' => 5],
+            ['nombre' => 'Ralladura de Naranja', 'cantidad' => 5],
             ['nombre' => 'Pasta de tomate', 'cantidad' => 200],
         ]);
 
@@ -416,7 +451,7 @@ class SubRecetasSeeder extends Seeder
         $this->crearSubreceta('SUB CHIMICHURRI', $categoriaSubrecetas->id, [
             ['nombre' => 'Perejil crespo', 'cantidad' => 270],
             ['nombre' => 'Aceite', 'cantidad' => 1500],
-            ['nombre' => 'Aji dulce', 'cantidad' => 140],
+            ['nombre' => 'Aji Dulce', 'cantidad' => 140],
             ['nombre' => 'Ajo pelado', 'cantidad' => 60],
             ['nombre' => 'Oregano escamas', 'cantidad' => 5],
             ['nombre' => 'Pimienta negra', 'cantidad' => 5],
@@ -496,7 +531,7 @@ class SubRecetasSeeder extends Seeder
             ['nombre' => 'Cebolla blanca', 'cantidad' => 100],
             ['nombre' => 'Pimenton rojo', 'cantidad' => 100],
             ['nombre' => 'Ajo pelado', 'cantidad' => 20],
-            ['nombre' => 'Aderezo bbq', 'cantidad' => 100],
+            ['nombre' => 'Aderezo Bbq', 'cantidad' => 100],
         ]);
 
         // ========================================
@@ -538,6 +573,7 @@ class SubRecetasSeeder extends Seeder
         $this->crearSubreceta('SUB CHEESECAKE DE OREO', $categoriaSubrecetas->id, [
             ['nombre' => 'Crema de leche de vida', 'cantidad' => 400],
             ['nombre' => 'Cobertura de chocolate', 'cantidad' => 200],
+            ['nombre' => 'Crema de leche de vida', 'cantidad' => 200],
             ['nombre' => 'Leche condensada', 'cantidad' => 400],
             ['nombre' => 'Queso crema', 'cantidad' => 500],
             ['nombre' => 'Vainilla', 'cantidad' => 10],
@@ -592,7 +628,7 @@ class SubRecetasSeeder extends Seeder
         $this->crearSubreceta('SUB ARROZ COCIDO', $categoriaSubrecetas->id, [
             ['nombre' => 'Sal común', 'cantidad' => 10],
             ['nombre' => 'Agua', 'cantidad' => 2000],
-            ['nombre' => 'Aceite', 'cantidad' => 30],
+            ['nombre' => 'Aceite Bidón', 'cantidad' => 30],
             ['nombre' => 'Arroz', 'cantidad' => 1000],
         ]);
 
