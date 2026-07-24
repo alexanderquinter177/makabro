@@ -38,6 +38,7 @@ class CategoriasSeeder extends Seeder
      */
     private function crearCategorias(): void
     {
+       // En CategoriasSeeder.php - Agregar estas categorías
         $categorias = [
             'Aceites y abarrotes',
             'Aves',
@@ -53,6 +54,12 @@ class CategoriasSeeder extends Seeder
             'Rendimiento',
             'Salsas',
             'Sub receta',
+            // ✅ NUEVAS CATEGORÍAS
+            'Aseo y limpieza',      // Para productos de aseo
+            'Desechables',           // Para productos desechables
+            'Dulces y postres',      // Para dulces y anchetas
+            'Papelería',             // Para productos de papelería
+            'Decoración y reservas', // Para decoración y reservas
         ];
         
 
