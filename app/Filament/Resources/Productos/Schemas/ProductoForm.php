@@ -335,9 +335,8 @@ class ProductoForm
                             ->content(function ($get, $record) use ($forceTipo) {
                                 $tipo = $get('tipo') ?? $record?->tipo ?? $forceTipo;
                                 $componentes = $get('componentes') ?? [];
-                                $totalCosto = 0;
-
-                                // Calcular total acumulado de la receta e identificar insumo más caro
+                                $totalCostoBatch = 0;
+                                $rendimientoBatch = 0;
                                 $insumoMasCaroId = null;
                                 $maxCostoItem = 0;
 
@@ -348,7 +347,8 @@ class ProductoForm
                                         $producto = Producto::find($productoHijoId);
                                         if ($producto) {
                                             $costoNum = floatval($producto->getCostoUnitario()) * $cantidad;
-                                            $totalCosto += $costoNum;
+                                            $totalCostoBatch += $costoNum;
+                                            $rendimientoBatch += $cantidad;
 
                                             if ($costoNum > $maxCostoItem) {
                                                 $maxCostoItem = $costoNum;
@@ -357,6 +357,9 @@ class ProductoForm
                                         }
                                     }
                                 }
+
+                                $costoUnitarioSub = $rendimientoBatch > 0 ? ($totalCostoBatch / $rendimientoBatch) : $totalCostoBatch;
+                                $totalCosto = ($tipo === 'subensamble') ? $costoUnitarioSub : $totalCostoBatch;
 
                                 $rawPrecioVenta = $get('precio_compra') ?? '0';
                                 if (is_numeric($rawPrecioVenta)) {
@@ -694,21 +697,35 @@ class ProductoForm
                                 $html .= '  <div class="mk-kpi-grid">';
 
                                 if ($tipo === 'subensamble') {
-                                    // Tarjeta 1: Costo Total de Producción (Subreceta)
+                                    // Tarjeta 1: Costo Total Batch
                                     $html .= '    <div class="mk-kpi-card mk-card-rose-border">';
                                     $html .= '      <div class="mk-kpi-header">';
-                                    $html .= '        <span class="mk-kpi-title">Costo Total Subreceta</span>';
+                                    $html .= '        <span class="mk-kpi-title">Costo Total Batch</span>';
                                     $html .= '        <span class="mk-icon-wrapper mk-icon-rose">';
                                     $html .= '          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>';
                                     $html .= '        </span>';
                                     $html .= '      </div>';
                                     $html .= '      <div class="mk-kpi-value-container">';
-                                    $html .= '        <span class="mk-kpi-value mk-color-rose">$ ' . number_format($totalCosto, 0, ',', '.') . '</span>';
-                                    $html .= '        <span class="mk-kpi-label mk-badge-rose">BOM</span>';
+                                    $html .= '        <span class="mk-kpi-value mk-color-rose">$ ' . number_format($totalCostoBatch, 0, ',', '.') . '</span>';
+                                    $html .= '        <span class="mk-kpi-label mk-badge-rose">BATCH</span>';
                                     $html .= '      </div>';
                                     $html .= '    </div>';
 
-                                    // Tarjeta 2: Insumo más Caro
+                                    // Tarjeta 2: Costo Unitario por Gramo/Unidad
+                                    $html .= '    <div class="mk-kpi-card mk-card-emerald-border">';
+                                    $html .= '      <div class="mk-kpi-header">';
+                                    $html .= '        <span class="mk-kpi-title">Costo Unitario (Rendimiento)</span>';
+                                    $html .= '        <span class="mk-icon-wrapper mk-icon-emerald">';
+                                    $html .= '          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>';
+                                    $html .= '        </span>';
+                                    $html .= '      </div>';
+                                    $html .= '      <div class="mk-kpi-value-container">';
+                                    $html .= '        <span class="mk-kpi-value mk-color-emerald">$ ' . number_format($costoUnitarioSub, 2, ',', '.') . '</span>';
+                                    $html .= '        <span class="mk-kpi-label mk-badge-emerald">' . number_format($rendimientoBatch, 0, ',', '.') . ' gr/und</span>';
+                                    $html .= '      </div>';
+                                    $html .= '    </div>';
+
+                                    // Tarjeta 3: Insumo más Caro
                                     $nombreCaro = $insumoMasCaroId ? (Producto::find($insumoMasCaroId)?->nombre ?? 'Ninguno') : 'Ninguno';
                                     $html .= '    <div class="mk-kpi-card mk-card-amber-border">';
                                     $html .= '      <div class="mk-kpi-header">';

@@ -91,24 +91,30 @@ class ProductosTable
             ]))
             ->headerActions([
                 Action::make('calcularCostosSubrecetas')
-                    ->label('Calcular Costos Subrecetas')
+                    ->label('Calcular Costos Recetas y Subrecetas')
                     ->icon('heroicon-o-calculator')
                     ->color('warning')
                     ->visible(fn () => auth()->user()?->hasRole('super_admin') || auth()->user()?->hasRole('admin'))
                     ->action(function () {
+                        // 1. Recalcular subensambles primero (ingredientes para productos de venta)
                         $subrecetas = Producto::where('tipo', 'subensamble')->get();
-                        
-                        $count = 0;
                         foreach ($subrecetas as $subreceta) {
-                            $costoCalculado = $subreceta->calcularCosto();
-                            $subreceta->precio_compra = $costoCalculado;
+                            $subreceta->precio_compra = $subreceta->calcularCosto();
                             $subreceta->save();
-                            $count++;
                         }
+
+                        // 2. Recalcular productos de venta
+                        $productosVenta = Producto::where('tipo', 'venta')->get();
+                        foreach ($productosVenta as $productoVenta) {
+                            $productoVenta->precio_compra = $productoVenta->calcularCosto();
+                            $productoVenta->save();
+                        }
+
+                        $totalCount = $subrecetas->count() + $productosVenta->count();
                         
                         Notification::make()
-                            ->title('Costo de Subrecetas Calculado')
-                            ->body("Se recalcularon y actualizaron los costos de {$count} subrecetas.")
+                            ->title('Costos Calculados')
+                            ->body("Se recalcularon y actualizaron los costos de {$totalCount} recetas (subensambles y venta).")
                             ->success()
                             ->send();
                     })

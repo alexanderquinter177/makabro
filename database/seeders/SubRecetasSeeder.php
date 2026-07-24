@@ -10,16 +10,21 @@ use Illuminate\Support\Str;
 
 class SubRecetasSeeder extends Seeder
 {
-    public function run(): void
+      public function run(): void
     {
         $this->command->info('📦 Cargando Subrecetas...');
 
-        // Obtener una categoría para las subrecetas
+        // ✅ LIMPIAR LA TABLA recetas_bom ANTES DE INSERTAR
+        // Desactivar restricciones de clave foránea
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('recetas_bom')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
         $categoriaSubrecetas = Categoria::firstOrCreate(
             ['nombre' => 'Subrecetas'],
             [
                 'nombre' => 'Subrecetas',
-                'slug' => Str::slug('Subrecetas'), // 👈 AGREGAR SLUG
+                'slug' => Str::slug('Subrecetas'),
                 'descripcion' => 'Subrecetas para preparación de platos',
                 'activo' => true,
                 'created_at' => now(),
@@ -657,11 +662,9 @@ class SubRecetasSeeder extends Seeder
      */
     private function crearSubreceta(string $nombre, int $categoriaId, array $ingredientes): void
     {
-        // Buscar unidad de medida por defecto (gr o ID 4)
         $unidadGr = \App\Models\Catalog\UnidadMedida::where('abreviatura', 'gr')->first();
         $unidadCompraId = $unidadGr ? $unidadGr->id : 4;
 
-        // Buscar o crear la subreceta (producto tipo 'subensamble')
         $subreceta = Producto::firstOrCreate(
             ['nombre' => $nombre],
             [
@@ -675,26 +678,35 @@ class SubRecetasSeeder extends Seeder
             ]
         );
 
-        // Eliminar ingredientes antiguos (para evitar duplicados)
+        // ✅ Eliminar ingredientes antiguos (evita duplicados)
         DB::table('recetas_bom')
             ->where('producto_padre_id', $subreceta->id)
             ->delete();
 
-        // Agregar los ingredientes
         $contador = 0;
         foreach ($ingredientes as $ingData) {
             $ingrediente = Producto::where('nombre', $ingData['nombre'])->first();
             
             if ($ingrediente) {
-                DB::table('recetas_bom')->insert([
-                    'producto_padre_id' => $subreceta->id,
-                    'producto_hijo_id' => $ingrediente->id,
-                    'cantidad' => $ingData['cantidad'],
-                    'nota' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                $contador++;
+                // ✅ Verificar si ya existe para evitar duplicados
+                $existe = DB::table('recetas_bom')
+                    ->where('producto_padre_id', $subreceta->id)
+                    ->where('producto_hijo_id', $ingrediente->id)
+                    ->exists();
+                
+                if (!$existe) {
+                    DB::table('recetas_bom')->insert([
+                        'producto_padre_id' => $subreceta->id,
+                        'producto_hijo_id' => $ingrediente->id,
+                        'cantidad' => $ingData['cantidad'],
+                        'nota' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $contador++;
+                } else {
+                    $this->command->warn("⚠️ Ingrediente ya existe: '{$ingData['nombre']}' para '{$nombre}'");
+                }
             } else {
                 $this->command->warn("⚠️ Ingrediente no encontrado: '{$ingData['nombre']}' para '{$nombre}'");
             }

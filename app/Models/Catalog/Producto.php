@@ -267,26 +267,42 @@ class Producto extends Model
     {
         // Si es insumo, usar precio_compra
         if ($this->tipo === 'insumo') {
-            return $this->precio_compra ?? 0;
+            return floatval($this->precio_compra ?? 0);
         }
 
-        // Si tiene ingredientes, sumar costos
+        // Si tiene ingredientes, calcular costos
         if ($this->tieneIngredientes()) {
-            $costo = 0;
+            $costoTotalBatch = 0;
+            $rendimientoBatch = 0;
+
             foreach ($this->ingredientes as $ingrediente) {
-                $costo += $ingrediente->calcularCosto() * $ingrediente->pivot->cantidad;
+                $cantidad = floatval($ingrediente->pivot->cantidad ?? 0);
+                $costoTotalBatch += $ingrediente->getCostoUnitario() * $cantidad;
+                $rendimientoBatch += $cantidad;
             }
-            return $costo;
+
+            // Si es una subreceta (subensamble), el costo unitario por gramo/unidad es (costo total batch / rendimiento)
+            if ($this->tipo === 'subensamble') {
+                return $rendimientoBatch > 0 ? ($costoTotalBatch / $rendimientoBatch) : $costoTotalBatch;
+            }
+
+            // Si es producto de venta, el costo total del plato es la suma de sus insumos/subrecetas
+            return $costoTotalBatch;
         }
 
-        return $this->precio_compra ?? 0;
+        return floatval($this->precio_compra ?? 0);
     }
 
     public function getCostoUnitario(): float
     {
         if ($this->tipo === 'insumo') {
-            return $this->precio_compra ?? 0;
+            return floatval($this->precio_compra ?? 0);
         }
+
+        if ($this->tipo === 'subensamble' && floatval($this->precio_compra) > 0) {
+            return floatval($this->precio_compra);
+        }
+
         return $this->calcularCosto();
     }
 }

@@ -10,11 +10,11 @@ use App\Models\Catalog\UnidadMedida;
 
 class RecetaSeeder extends Seeder
 {
-    public function run(): void
+     public function run(): void
     {
         $this->command->info('📦 Cargando Recetas...');
 
-        // Obtener categoría Recetas
+
         $categoriaRecetas = Categoria::firstOrCreate(
             ['nombre' => 'Recetas'],
             [
@@ -27,7 +27,6 @@ class RecetaSeeder extends Seeder
             ]
         );
 
-        // Unidad de medida por defecto (gr)
         $unidadGr = UnidadMedida::where('abreviatura', 'und')->first();
         $unidadCompraId = $unidadGr ? $unidadGr->id : 4;
 
@@ -210,7 +209,6 @@ class RecetaSeeder extends Seeder
             ['nombre' => 'Sub sour makabra', 'cantidad' => 40],
             ['nombre' => 'Queso Mozzarella Tajado', 'cantidad' => 2],
             ['nombre' => 'Tortillas', 'cantidad' => 6],
-            ['nombre' => 'Sub sour makabra', 'cantidad' => 20],
             ['nombre' => 'Sub guacamole', 'cantidad' => 20],
             ['nombre' => 'Sub pico de gallo', 'cantidad' => 20],
         ]);
@@ -569,7 +567,6 @@ class RecetaSeeder extends Seeder
      */
     private function crearReceta(string $nombre, int $categoriaId, int $unidadCompraId, array $ingredientes): void
     {
-        // Buscar o crear la receta
         $receta = Producto::firstOrCreate(
             ['nombre' => $nombre],
             [
@@ -583,26 +580,33 @@ class RecetaSeeder extends Seeder
             ]
         );
 
-        // Eliminar ingredientes antiguos (para evitar duplicados)
+        // ✅ Eliminar ingredientes antiguos (evita duplicados)
         DB::table('recetas_bom')
             ->where('producto_padre_id', $receta->id)
             ->delete();
 
-        // Agregar los ingredientes
         $contador = 0;
         foreach ($ingredientes as $ingData) {
             $ingrediente = Producto::where('nombre', $ingData['nombre'])->first();
             
             if ($ingrediente) {
-                DB::table('recetas_bom')->insert([
-                    'producto_padre_id' => $receta->id,
-                    'producto_hijo_id' => $ingrediente->id,
-                    'cantidad' => $ingData['cantidad'],
-                    'nota' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-                $contador++;
+                // ✅ Verificar si ya existe
+                $existe = DB::table('recetas_bom')
+                    ->where('producto_padre_id', $receta->id)
+                    ->where('producto_hijo_id', $ingrediente->id)
+                    ->exists();
+                
+                if (!$existe) {
+                    DB::table('recetas_bom')->insert([
+                        'producto_padre_id' => $receta->id,
+                        'producto_hijo_id' => $ingrediente->id,
+                        'cantidad' => $ingData['cantidad'],
+                        'nota' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $contador++;
+                }
             } else {
                 $this->command->warn("⚠️ Ingrediente no encontrado: '{$ingData['nombre']}' para '{$nombre}'");
             }

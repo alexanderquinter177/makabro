@@ -9,8 +9,8 @@ use App\Models\Catalog\UnidadMedida;
 use Illuminate\Support\Facades\DB;
 
 class ProductosSeeder extends Seeder
-{
-    public function run()
+{       
+        public function run()
     {
         $categorias = Categoria::pluck('id', 'nombre')->toArray();
         $unidades = UnidadMedida::pluck('id', 'abreviatura')->toArray();
@@ -25,63 +25,83 @@ class ProductosSeeder extends Seeder
             return;
         }
 
-        if (DB::connection()->getDriverName() === 'mysql') {
-            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        }
-
-        Producto::truncate();
-
-        if (DB::connection()->getDriverName() === 'mysql') {
-            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-        }
+        // ✅ Limpiar la tabla correctamente
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('productos')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $productos = $this->getProductos();
 
-        $contador = 0;
-        $errores = 0;
-
+        // ✅ Agrupar productos por categoría ANTES de insertar
+        $productosPorCategoria = [];
         foreach ($productos as $productoData) {
-            $categoriaId = $categorias[$productoData['categoria']] ?? null;
-            $unidadCompraId = $unidades[$productoData['unidad']] ?? null;
+            $categoria = $productoData['categoria'];
+            if (!isset($productosPorCategoria[$categoria])) {
+                $productosPorCategoria[$categoria] = [];
+            }
+            $productosPorCategoria[$categoria][] = $productoData;
+        }
 
+        // ✅ Insertar por categoría para generar códigos secuenciales
+        foreach ($productosPorCategoria as $categoriaNombre => $productosDeCategoria) {
+            $categoriaId = $categorias[$categoriaNombre] ?? null;
+            
             if (!$categoriaId) {
-                $this->command->warn("⚠️ Categoría no encontrada: '{$productoData['categoria']}' para '{$productoData['nombre']}'");
-                $errores++;
+                $this->command->warn("⚠️ Categoría no encontrada: '{$categoriaNombre}'");
                 continue;
             }
 
-            if (!$unidadCompraId) {
-                $this->command->warn("⚠️ Unidad no encontrada: '{$productoData['unidad']}' para '{$productoData['nombre']}'");
-                $errores++;
-                continue;
+            // Obtener el último código para esta categoría
+            $prefijoTipo = 'IN';
+            $codigoCategoria = strtoupper(substr($categoriaNombre, 0, 3));
+            
+            $ultimo = DB::table('productos')
+                        ->where('tipo', 'insumo')
+                        ->where('categoria_id', $categoriaId)
+                        ->orderBy('id', 'desc')
+                        ->first();
+            
+            $numero = 1;
+            if ($ultimo && preg_match('/-(\d{3})$/', $ultimo->codigo, $matches)) {
+                $numero = intval($matches[1]) + 1;
             }
 
-            // Limpiar precio: eliminar $ y comas, convertir a float
-            $precio = $this->limpiarPrecio($productoData['precio']);
+            foreach ($productosDeCategoria as $productoData) {
+                $unidadCompraId = $unidades[$productoData['unidad']] ?? null;
 
-            Producto::create([
-                'categoria_id' => $categoriaId,
-                'nombre' => $productoData['nombre'],
-                'tipo' => 'insumo',
-                'precio_compra' => $precio,
-                'unidad_compra_id' => $unidadCompraId,
-                'activo' => true,
-                'proveedor_habitual' => null,
-                'notas' => null,
-            ]);
+                if (!$unidadCompraId) {
+                    $this->command->warn("⚠️ Unidad no encontrada: '{$productoData['unidad']}' para '{$productoData['nombre']}'");
+                    continue;
+                }
 
-            $contador++;
+                $precio = $this->limpiarPrecio($productoData['precio']);
+                
+                $numeroFormateado = str_pad($numero, 3, '0', STR_PAD_LEFT);
+                $codigo = "{$prefijoTipo}-{$codigoCategoria}-{$numeroFormateado}";
+
+                // ✅ Insertar usando DB::table para evitar eventos
+                DB::table('productos')->insert([
+                    'categoria_id' => $categoriaId,
+                    'nombre' => $productoData['nombre'],
+                    'tipo' => 'insumo',
+                    'precio_compra' => $precio,
+                    'unidad_compra_id' => $unidadCompraId,
+                    'activo' => true,
+                    'proveedor_habitual' => null,
+                    'notas' => null,
+                    'codigo' => $codigo,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                $this->command->line("   ✅ Creado: {$codigo} - {$productoData['nombre']}");
+                $numero++;
+            }
         }
 
-        $this->command->info("✅ Productos creados: {$contador}");
-        if ($errores > 0) {
-            $this->command->warn("⚠️ Productos con errores: {$errores}");
-        }
+        $this->command->info("✅ Todos los productos fueron creados exitosamente!");
     }
 
-    /**
-     * Limpiar precio: eliminar $, comas, espacios y convertir a float
-     */
     private function limpiarPrecio($precio): float
     {
         if (empty($precio) || $precio === '' || $precio === null) {
@@ -108,15 +128,15 @@ class ProductosSeeder extends Seeder
     {
         return [
             // ===== AVES =====
-            [
+            
                 ['nombre' => 'Alas de pollo', 'categoria' => 'Aves', 'unidad' => 'gr', 'precio' => '16.80'],
                 ['nombre' => 'Contramuslo', 'categoria' => 'Aves', 'unidad' => 'gr', 'precio' => '12.90'],
                 ['nombre' => 'Pechuga Suprema', 'categoria' => 'Aves', 'unidad' => 'gr', 'precio' => '21.20'],
                 ['nombre' => 'Pechuga Filete', 'categoria' => 'Aves', 'unidad' => 'und', 'precio' => '27.50'],
-            ],
+            
 
             // ===== BEBIDAS =====
-            [
+            
                 ['nombre' => 'Absolut 1/2', 'categoria' => 'Bebidas', 'unidad' => 'ml', 'precio' => '120.00'],
                 ['nombre' => 'Absolut Botella', 'categoria' => 'Bebidas', 'unidad' => 'ml', 'precio' => '85.46'],
                 ['nombre' => 'Agua Tónica Ginger Beer', 'categoria' => 'Bebidas', 'unidad' => 'ml', 'precio' => '17.52'],
@@ -269,10 +289,10 @@ class ProductosSeeder extends Seeder
                 ['nombre' => 'Pulpa Fruta Piña Y Maracuya', 'categoria' => 'Bebidas', 'unidad' => 'und', 'precio' => '4200.00'],
                 ['nombre' => 'Agua', 'categoria' => 'Bebidas', 'unidad' => 'und', 'precio' => '1.00'],
                 ['nombre' => 'Tequila para flamear', 'categoria' => 'Bebidas', 'unidad' => 'ml', 'precio' => '20.88'],
-            ],
+            
 
             // ===== CARNES =====
-            [
+            
                 ['nombre' => 'Asado De Tira', 'categoria' => 'Carnes', 'unidad' => 'gr', 'precio' => '21.50'],
                 ['nombre' => 'Bondiola De Cerdo', 'categoria' => 'Carnes', 'unidad' => 'gr', 'precio' => '20.00'],
                 ['nombre' => 'Cañón De Cerdo', 'categoria' => 'Carnes', 'unidad' => 'gr', 'precio' => '0.00'],
@@ -295,10 +315,10 @@ class ProductosSeeder extends Seeder
                 ['nombre' => 'Solomito De Cerdo', 'categoria' => 'Carnes', 'unidad' => 'und', 'precio' => '6400.00'],
                 ['nombre' => 'Tocineta', 'categoria' => 'Carnes', 'unidad' => 'gr', 'precio' => '1703.13'],
                 ['nombre' => 'Tomahawk De Cerdo', 'categoria' => 'Carnes', 'unidad' => 'und', 'precio' => '12600.00'],
-            ],                 
+                            
 
             // ==================== ACEITES Y ABARROTES ====================
-        [
+        
             ['nombre' => 'Aceite Garrafon', 'categoria' => 'Aceites y abarrotes', 'unidad' => 'ml', 'precio' => '2.80'],
             ['nombre' => 'Aceite Bidón', 'categoria' => 'Aceites y abarrotes', 'unidad' => 'ml', 'precio' => '3.70'],
             ['nombre' => 'Arequipe', 'categoria' => 'Aceites y abarrotes', 'unidad' => 'gr', 'precio' => '21.00'],
@@ -325,11 +345,11 @@ class ProductosSeeder extends Seeder
             ['nombre' => 'Sweet Chilly Sauce', 'categoria' => 'Aceites y abarrotes', 'unidad' => 'gr', 'precio' => '29.90'],
             ['nombre' => 'Vainilla', 'categoria' => 'Aceites y abarrotes', 'unidad' => 'ml', 'precio' => '8.00'],
             ['nombre' => 'Vinagre Blanco', 'categoria' => 'Aceites y abarrotes', 'unidad' => 'ml', 'precio' => '1.30'],
-        ],
+        
 
 
                 // ===== ESPECIAS =====
-        [
+    
             ['nombre' => 'Ajinomoto', 'categoria' => 'Especias', 'unidad' => 'gr', 'precio' => '17.00'],
             ['nombre' => 'Ajo En Polvo', 'categoria' => 'Especias', 'unidad' => 'gr', 'precio' => '24.00'],
             ['nombre' => 'Ajonjoli', 'categoria' => 'Especias', 'unidad' => 'gr', 'precio' => '25.50'],
@@ -367,17 +387,17 @@ class ProductosSeeder extends Seeder
             ['nombre' => 'Tomillo Molido', 'categoria' => 'Especias', 'unidad' => 'gr', 'precio' => '32.00'],
             ['nombre' => 'Achiote', 'categoria' => 'Especias', 'unidad' => 'gr', 'precio' => '1.00'],
             ['nombre' => 'Salsa de chocolate', 'categoria' => 'Especias', 'unidad' => 'ml', 'precio' => '22.66'],
-        ],
+        
 
         // ===== FRUTAS =====
-        [
-            ['nombre' => 'Mazorca', 'categoria' => 'Frutas', 'unidad' => 'und', 'precio' => '7.00'],
-            ['nombre' => 'batata', 'categoria' => 'Frutas', 'unidad' => 'gr', 'precio' => '20.00'],
-            ['nombre' => 'Kiwi', 'categoria' => 'Frutas', 'unidad' => 'gr', 'precio' => '17.50'],
-        ],
+    
+            ['nombre' => 'Mazorca', 'categoria' => 'Frutas y verduras', 'unidad' => 'und', 'precio' => '7.00'],
+            ['nombre' => 'batata', 'categoria' => 'Frutas y verduras', 'unidad' => 'gr', 'precio' => '20.00'],
+            ['nombre' => 'Kiwi', 'categoria' => 'Frutas y verduras', 'unidad' => 'gr', 'precio' => '17.50'],
+        
 
         // ===== FRUTAS Y VERDURAS =====
-        [
+        
             ['nombre' => 'Aguacate Hass', 'categoria' => 'Frutas y verduras', 'unidad' => 'gr', 'precio' => '8.50'],
             ['nombre' => 'Aguacate Papelillo-Collin', 'categoria' => 'Frutas y verduras', 'unidad' => 'gr', 'precio' => '12.50'],
             ['nombre' => 'Aji Dulce', 'categoria' => 'Frutas y verduras', 'unidad' => 'gr', 'precio' => '7.00'],
@@ -439,10 +459,10 @@ class ProductosSeeder extends Seeder
             ['nombre' => 'Zanahoria', 'categoria' => 'Frutas y verduras', 'unidad' => 'gr', 'precio' => '3.20'],
             ['nombre' => 'Uva Blanca', 'categoria' => 'Frutas y verduras', 'unidad' => 'gr', 'precio' => '36.00'],
             ['nombre' => 'Zuquini Verde Y Amarillo', 'categoria' => 'Frutas y verduras', 'unidad' => 'gr', 'precio' => '5.00'],
-        ],
+        
 
         // ===== HARINAS Y PANADERÍA =====
-        [
+        
             ['nombre' => 'Apanado Broster', 'categoria' => 'Harinas y panadería', 'unidad' => 'gr', 'precio' => ''],
             ['nombre' => 'Arepa De Tela', 'categoria' => 'Harinas y panadería', 'unidad' => 'und', 'precio' => '485.00'],
             ['nombre' => 'Arepa De Yuca', 'categoria' => 'Harinas y panadería', 'unidad' => 'und', 'precio' => '850.00'],
@@ -458,10 +478,10 @@ class ProductosSeeder extends Seeder
             ['nombre' => 'Pan Brioche Brillo', 'categoria' => 'Harinas y panadería', 'unidad' => 'und', 'precio' => '1700.00'],
             ['nombre' => 'Pasteles Pollo', 'categoria' => 'Harinas y panadería', 'unidad' => 'und', 'precio' => '850.00'],
             ['nombre' => 'Pan Mini Burguer', 'categoria' => 'Harinas y panadería', 'unidad' => 'und', 'precio' => '1100.00'],
-        ],
+        
 
         // ===== LÁCTEOS =====
-        [
+    
             ['nombre' => 'Crema Agria', 'categoria' => 'Lácteos', 'unidad' => 'gr', 'precio' => '5.08'],
             ['nombre' => 'Crema De Leche Colanta', 'categoria' => 'Lácteos', 'unidad' => 'gr', 'precio' => '0.00'],
             ['nombre' => 'Crema De Leche de vida', 'categoria' => 'Lácteos', 'unidad' => 'gr', 'precio' => '19.00'],
@@ -470,10 +490,10 @@ class ProductosSeeder extends Seeder
             ['nombre' => 'Leche Condensada', 'categoria' => 'Lácteos', 'unidad' => 'gr', 'precio' => '36.40'],
             ['nombre' => 'Mantequilla', 'categoria' => 'Lácteos', 'unidad' => 'gr', 'precio' => '66.00'],
             ['nombre' => 'Queso crema', 'categoria' => 'Lácteos', 'unidad' => 'gr', 'precio' => '20.25'],
-        ],
+        
 
         // ===== OTROS =====
-        [
+    
             ['nombre' => 'Tomates secos', 'categoria' => 'Otros', 'unidad' => 'und', 'precio' => '0.01'],
             ['nombre' => 'Salsa de humo', 'categoria' => 'Otros', 'unidad' => 'und', 'precio' => ''],
             ['nombre' => 'Vinagre de manzana', 'categoria' => 'Otros', 'unidad' => 'und', 'precio' => ''],
@@ -482,10 +502,9 @@ class ProductosSeeder extends Seeder
             ['nombre' => 'Galleta oreo', 'categoria' => 'Otros', 'unidad' => 'gr', 'precio' => '22.38'],
             ['nombre' => 'Palos pinchuzo', 'categoria' => 'Otros', 'unidad' => 'und', 'precio' => '170.00'],
             ['nombre' => 'Salsa de maíz', 'categoria' => 'Otros', 'unidad' => 'ml', 'precio' => '26.21'],
-        ],
-
+        
         // ===== QUESOS =====
-        [
+        
             ['nombre' => 'Queso Azul', 'categoria' => 'Quesos', 'unidad' => 'gr', 'precio' => '660.00'],
             ['nombre' => 'Queso Cheddar Tajado', 'categoria' => 'Quesos', 'unidad' => 'und', 'precio' => '654.00'],
             ['nombre' => 'Queso Gouda', 'categoria' => 'Quesos', 'unidad' => 'und', 'precio' => '830.00'],
@@ -494,10 +513,10 @@ class ProductosSeeder extends Seeder
             ['nombre' => 'Queso Parmesano', 'categoria' => 'Quesos', 'unidad' => 'gr', 'precio' => '35.00'],
             ['nombre' => 'Queso asar', 'categoria' => 'Quesos', 'unidad' => 'gr', 'precio' => '37.00'],
             ['nombre' => 'Queso Philadelphia', 'categoria' => 'Quesos', 'unidad' => 'gr', 'precio' => '28.00'],
-        ],
+        
 
         // ===== RENDIMIENTO =====
-        [
+        
             ['nombre' => 'Rend bondiola de cerdo', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '28.57'],
             ['nombre' => 'Rend zumo de Naranja', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '8.50'],
             ['nombre' => 'Rend zumo de Maracuya', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '19.50'],
@@ -506,10 +525,10 @@ class ProductosSeeder extends Seeder
             ['nombre' => 'Rend mango tommy', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '14.00'],
             ['nombre' => 'Rend aguacate hass', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '15.32'],
             ['nombre' => 'Rend piña oro miel', 'categoria' => 'rendimiento', 'unidad' => 'gr', 'precio' => '4.50'],
-        ],
+        
 
         // ===== SALSAS =====
-        [
+        
             ['nombre' => 'Aderezo Bbq', 'categoria' => 'Salsas', 'unidad' => 'gr', 'precio' => '7.80'],
             ['nombre' => 'Aderezo Teriyaki', 'categoria' => 'Salsas', 'unidad' => 'gr', 'precio' => '15.00'],
             ['nombre' => 'Guacamole', 'categoria' => 'Salsas', 'unidad' => 'gr', 'precio' => '0.00'],
@@ -528,8 +547,7 @@ class ProductosSeeder extends Seeder
             ['nombre' => 'Salsa Heinz Recarga', 'categoria' => 'Salsas', 'unidad' => 'gr', 'precio' => '15.00'],
             ['nombre' => 'Salsa Heinz Tarro', 'categoria' => 'Salsas', 'unidad' => 'gr', 'precio' => '11.55'],
             ['nombre' => 'Salsa Inglesa', 'categoria' => 'Salsas', 'unidad' => 'gr', 'precio' => '7.30'],
-            ['nombre' => 'Salsa Roja Bary', 'categoria' => 'Salsas', 'unidad' => 'ml', 'precio' => '11.70'],
-        ],
+            ['nombre' => 'Salsa Roja Bary', 'categoria' => 'Salsas', 'unidad' => 'ml', 'precio' => '11.70'],        
 
         ];
     }
