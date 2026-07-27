@@ -20,6 +20,25 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Auto-crear directorios del sistema de archivos con permisos 0775 (especialmente para Railway Volumes)
+        $storagePaths = [
+            storage_path('app/public'),
+            storage_path('app/private/temp-imports'),
+            storage_path('app/temp-imports'),
+            storage_path('app/livewire-tmp'),
+            storage_path('framework/cache/data'),
+            storage_path('framework/sessions'),
+            storage_path('framework/views'),
+            storage_path('logs'),
+            '/tmp/livewire-tmp',
+        ];
+
+        foreach ($storagePaths as $path) {
+            if (!is_dir($path)) {
+                @mkdir($path, 0775, true);
+            }
+        }
+
         // Forzar HTTPS en producción (Railway) para evitar el bloqueo de Livewire
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
