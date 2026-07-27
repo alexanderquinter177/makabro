@@ -13,6 +13,7 @@ use App\Services\Inventory\CargaInicialImporter;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class ListInventarioSedes extends ListRecords
 {
@@ -32,43 +33,33 @@ class ListInventarioSedes extends ListRecords
                     
                     $sedeId = session('sede_id');
                     $sede = $sedeId ? Sede::find($sedeId) : null;
-                    $sedeNombre = $sede ? str_replace(' ', '_', strtolower($sede->nombre)) : 'general';
-                    $fileName = 'plantilla_carga_inicial_' . $sedeNombre . '.csv';
+                    $nombreSede = $sede ? \Illuminate\Support\Str::slug($sede->nombre) : 'general';
+                    $fileName = "plantilla_carga_inicial_makabro_{$nombreSede}.csv";
 
                     return response()->streamDownload(function () use ($sedeId) {
                         $output = fopen('php://output', 'w');
+                        
+                        // BOM para UTF-8 en Excel
                         fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
                         
-                        // Cabeceras en MAYÚSCULAS
-                        fputcsv($output, ['PRODUCTO_ID', 'CODIGO', 'NOMBRE', 'UNIDAD_MEDIDA', 'CANTIDAD_INICIAL', 'STOCK_MINIMO', 'STOCK_MAXIMO'], ';');
+                        // Encabezados
+                        fputcsv($output, ['codigo', 'nombre_producto', 'cantidad_inicial', 'stock_minimo', 'stock_maximo'], ';');
                         
-                        // 1. Cargar en memoria todos los stocks de la sede de una sola vez
-                        $stocksMap = InventarioSede::where('sede_id', $sedeId)
-                            ->get()
-                            ->keyBy('producto_id');
-
-                        // 2. Procesar los insumos ordenados por categoría y luego por nombre del producto
-                        Producto::where('productos.tipo', 'insumo')
-                            ->where('productos.activo', true)
-                            ->join('categorias', 'productos.categoria_id', '=', 'categorias.id')
-                            ->orderBy('categorias.nombre')
-                            ->orderBy('productos.nombre')
-                            ->select('productos.*')
-                            ->chunk(250, function ($insumos) use ($output, $stocksMap) {
-                                foreach ($insumos as $insumo) {
-                                    // Obtener stock desde el mapa cargado en memoria (0 consultas adicionales)
-                                    $stock = $stocksMap->get($insumo->id);
-
-                                    $cantidad = $stock ? floatval($stock->cantidad_actual) : 0;
-                                    $minimo = $stock ? floatval($stock->stock_minimo) : 0;
-                                    $maximo = $stock ? floatval($stock->stock_maximo) : 0;
-                                    $unidad = $insumo->unidadCompra ? $insumo->unidadCompra->abreviatura : '---';
+                        // Cargar TODOS los productos activos
+                        Producto::query()
+                            ->where('activo', true)
+                            ->orderBy('nombre')
+                            ->chunk(100, function ($productos) use ($output, $sedeId) {
+                                foreach ($productos as $prod) {
+                                    $inv = $sedeId ? InventarioSede::where('sede_id', $sedeId)->where('producto_id', $prod->id)->first() : null;
+                                    
+                                    $cantidad = $inv ? $inv->cantidad_actual : 0;
+                                    $minimo   = $inv ? $inv->stock_minimo : 10;
+                                    $maximo   = $inv ? $inv->stock_maximo : 100;
 
                                     fputcsv($output, [
-                                        $insumo->id,
-                                        strtoupper($insumo->codigo),
-                                        strtoupper($insumo->nombre),
-                                        strtoupper($unidad),
+                                        $prod->codigo,
+                                        $prod->nombre,
                                         $cantidad,
                                         $minimo,
                                         $maximo
@@ -92,29 +83,49 @@ class ListInventarioSedes extends ListRecords
                         ->required()
                         ->disk('local')
                         ->directory('temp-imports')
-                        ->maxSize(20480)
-                        ->acceptedFileTypes([
-                            'text/csv',
-                            'text/plain',
-                            'text/x-csv',
-                            'application/csv',
-                            'application/x-csv',
-                            'text/comma-separated-values',
-                            'text/x-comma-separated-values',
-                            'application/vnd.ms-excel',
-                            'application/vnd.msexcel',
-                            'application/excel',
-                            'application/octet-stream',
-                        ]),
+                        ->maxSize(30720)
+                        ->preserveFilenames(),
                 ])
                 ->action(function (array $data) {
-                    // 🔥 AUMENTAR TIEMPO DE EJECUCIÓN Y MEMORIA
-                    @set_time_limit(300); // 5 minutos
+                    @set_time_limit(600); // 10 minutos
                     @ini_set('memory_limit', '512M');
                     
-                    $filePath = Storage::disk('local')->path($data['archivo_csv']);
-                    $sedeId = session('sede_id');
+                    $relativeFilePath = $data['archivo_csv'] ?? null;
+                    
+                    if (!$relativeFilePath) {
+                        Log::error('❌ [CargaInicial] No se recibió el archivo subido.');
+                        Notification::make()
+                            ->title('Archivo no recibido')
+                            ->body('No se pudo encontrar el archivo subido. Intenta seleccionarlo nuevamente.')
+                            ->danger()
+                            ->send();
+                        return;
+                    }
 
+                    $filePath = Storage::disk('local')->path($relativeFilePath);
+                    
+                    if (!file_exists($filePath)) {
+                        Log::error("❌ [CargaInicial] Archivo no existe en disco: {$filePath}");
+                        Notification::make()
+                            ->title('Error de archivo')
+                            ->body("El archivo subido no se encuentra en la ruta del servidor ({$relativeFilePath}). Por favor reintenta la subida.")
+                            ->danger()
+                            ->send();
+                        return;
+                    }
+
+                    $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+                    if (!in_array($ext, ['csv', 'txt'])) {
+                        Log::warning("⚠️ [CargaInicial] Extensión no válida: .{$ext} en {$filePath}");
+                        Notification::make()
+                            ->title('Extensión no válida')
+                            ->body("El archivo seleccionado (.{$ext}) debe ser un archivo de texto o hoja de cálculo .csv")
+                            ->warning()
+                            ->send();
+                        return;
+                    }
+
+                    $sedeId = session('sede_id');
                     if (!$sedeId) {
                         Notification::make()
                             ->title('Sede no seleccionada')
@@ -125,9 +136,9 @@ class ListInventarioSedes extends ListRecords
                     }
                     
                     try {
+                        Log::info("🚀 [CargaInicial] Iniciando procesamiento de {$filePath} en Sede ID: {$sedeId}");
                         $sede = Sede::find($sedeId);
                         
-                        // 🔥 PROCESAR CON CHUNKS PARA OPTIMIZAR
                         $importer = new CargaInicialImporter();
                         $result = $importer->import($filePath, $sedeId);
                         
@@ -135,15 +146,15 @@ class ListInventarioSedes extends ListRecords
                             throw new \Exception($result['message'] ?? 'Error desconocido en la importación.');
                         }
                         
-                        // Construir mensaje detallado
-                        $mensaje = "✅ Importación completada exitosamente en la sede '{$sede->nombre}'\n\n";
+                        Log::info("✅ [CargaInicial] Importación exitosa en Sede '{$sede->nombre}':", $result['stats'] ?? []);
+
+                        $mensaje = "✅ Importación completada en la sede '{$sede->nombre}'\n\n";
                         $mensaje .= "📊 Productos procesados: {$result['stats']['productos_procesados']}\n";
                         $mensaje .= "📊 Stock actualizado: {$result['stats']['stock_actualizado']}\n";
                         $mensaje .= "📊 Movimientos Kardex: {$result['stats']['kardex_registrados']}\n";
                         
                         if (!empty($result['stats']['errores'])) {
-                            $mensaje .= "⚠️ Errores: " . count($result['stats']['errores']) . "\n\n";
-                            // Mostrar los primeros 5 errores
+                            $mensaje .= "⚠️ Errores en filas: " . count($result['stats']['errores']) . "\n\n";
                             foreach (array_slice($result['stats']['errores'], 0, 5) as $error) {
                                 $mensaje .= "• Línea {$error['linea']}: {$error['mensaje']}\n";
                             }
@@ -153,16 +164,21 @@ class ListInventarioSedes extends ListRecords
                         }
                         
                         Notification::make()
-                            ->title('✅ Importación Exitosa')
+                            ->title('✅ Carga Inicial Procesada')
                             ->body($mensaje)
                             ->success()
                             ->persistent()
                             ->send();
 
-                    } catch (\Exception $e) {
+                    } catch (\Throwable $e) {
+                        Log::error("❌ [CargaInicial] Excepción durante la importación: " . $e->getMessage(), [
+                            'archivo' => $filePath,
+                            'trace' => $e->getTraceAsString(),
+                        ]);
+
                         Notification::make()
-                            ->title('❌ Error en Carga Inicial')
-                            ->body($e->getMessage())
+                            ->title('❌ Error al procesar Carga Inicial')
+                            ->body("Error durante el procesamiento: " . $e->getMessage())
                             ->danger()
                             ->persistent()
                             ->send();
