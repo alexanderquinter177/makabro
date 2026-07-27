@@ -32,10 +32,16 @@ return [
 
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app/private'),
+            'root' => storage_path('app'),
             'serve' => true,
             'throw' => false,
             'report' => false,
+        ],
+
+        'livewire-tmp' => [
+            'driver' => 'local',
+            'root' => env('LIVEWIRE_TMP_DIR', storage_path('app/livewire-tmp')),
+            'throw' => false,
         ],
 
         'public' => [
