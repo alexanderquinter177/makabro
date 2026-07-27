@@ -38,9 +38,9 @@ return [
             'report' => false,
         ],
 
-        'livewire-tmp' => [
+       'livewire-tmp' => [
             'driver' => 'local',
-            'root' => env('LIVEWIRE_TMP_DIR', storage_path('app/livewire-tmp')),
+            'root' => '/tmp/livewire-tmp', // <-- RUTA ABSOLUTA FIJA
             'throw' => false,
         ],
 

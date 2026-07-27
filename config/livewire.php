@@ -290,9 +290,9 @@ return [
     */
 
     'temporary_file_upload' => [
-        'disk' => env('LIVEWIRE_TMP_DISK', null),
+        'disk' => 'livewire-tmp', // <-- Usar nuestro disco directamente
         'rules' => null,
-        'directory' => env('LIVEWIRE_TMP_DIR', 'livewire-tmp'),
+        'directory' => '', // <-- COMPLETAMENTE VACÍO para no duplicar la ruta
         'middleware' => null,
         'preview_mimes' => [
             'png', 'gif', 'bmp', 'svg', 'wav', 'mp4',
