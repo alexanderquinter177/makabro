@@ -28,6 +28,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
  */
 $storagePaths = [
     $app->storagePath('app/public'),
+    $app->storagePath('app/private/temp-imports'),
+    $app->storagePath('app/temp-imports'),
     $app->storagePath('app/livewire-tmp'),
     $app->storagePath('framework/cache/data'),
     $app->storagePath('framework/sessions'),

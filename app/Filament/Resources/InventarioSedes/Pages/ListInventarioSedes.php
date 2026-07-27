@@ -92,7 +92,20 @@ class ListInventarioSedes extends ListRecords
                         ->required()
                         ->disk('local')
                         ->directory('temp-imports')
-                        ->acceptedFileTypes(['text/csv', 'text/plain', 'application/vnd.ms-excel']),
+                        ->maxSize(20480)
+                        ->acceptedFileTypes([
+                            'text/csv',
+                            'text/plain',
+                            'text/x-csv',
+                            'application/csv',
+                            'application/x-csv',
+                            'text/comma-separated-values',
+                            'text/x-comma-separated-values',
+                            'application/vnd.ms-excel',
+                            'application/vnd.msexcel',
+                            'application/excel',
+                            'application/octet-stream',
+                        ]),
                 ])
                 ->action(function (array $data) {
                     // 🔥 AUMENTAR TIEMPO DE EJECUCIÓN Y MEMORIA
