@@ -40,7 +40,7 @@ return [
 
        'livewire-tmp' => [
             'driver' => 'local',
-            'root' => '/tmp/livewire-tmp', // <-- RUTA ABSOLUTA FIJA
+            'root' => env('LIVEWIRE_TMP_PATH', storage_path('app/livewire-tmp')),
             'throw' => false,
         ],
 

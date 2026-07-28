@@ -11,32 +11,59 @@ Route::get('/select-sede', SelectSede::class)
     ->middleware('auth');
 
 Route::get('/debug-upload', function () {
-    // Definir la ruta exacta que usa Livewire para subir archivos
     $livewireTmpPath = storage_path('app/livewire-tmp');
+    $tempImportsPath = storage_path('app/temp-imports');
     
-    // Intentar crear un archivo de prueba para ver si tenemos permisos
-    $testFile = $livewireTmpPath . '/test_write.txt';
-    $canWrite = false;
-    
+    // Test escribir en livewire-tmp
+    $testFileLivewire = $livewireTmpPath . '/test_write.txt';
+    $canWriteLivewire = false;
     try {
         if (!is_dir($livewireTmpPath)) {
-            mkdir($livewireTmpPath, 0755, true);
+            @mkdir($livewireTmpPath, 0775, true);
         }
-        file_put_contents($testFile, 'test');
-        $canWrite = file_exists($testFile);
-        if ($canWrite) {
-            unlink($testFile); // Borrarlo si tuvo éxito
+        file_put_contents($testFileLivewire, 'test_livewire');
+        $canWriteLivewire = file_exists($testFileLivewire);
+        if ($canWriteLivewire) {
+            @unlink($testFileLivewire);
         }
-    } catch (\Exception $e) {
-        $canWrite = 'Error: ' . $e->getMessage();
+    } catch (\Throwable $e) {
+        $canWriteLivewire = 'Error: ' . $e->getMessage();
+    }
+
+    // Test escribir en temp-imports
+    $testFileImports = $tempImportsPath . '/test_write.txt';
+    $canWriteImports = false;
+    try {
+        if (!is_dir($tempImportsPath)) {
+            @mkdir($tempImportsPath, 0775, true);
+        }
+        file_put_contents($testFileImports, 'test_imports');
+        $canWriteImports = file_exists($testFileImports);
+        if ($canWriteImports) {
+            @unlink($testFileImports);
+        }
+    } catch (\Throwable $e) {
+        $canWriteImports = 'Error: ' . $e->getMessage();
+    }
+
+    // Leer últimos errores del log de laravel si existen
+    $logFile = storage_path('logs/laravel.log');
+    $recentLogs = [];
+    if (file_exists($logFile)) {
+        $lines = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $recentLogs = array_slice($lines, -15);
     }
 
     return response()->json([
         '1_entorno' => config('app.env'),
-        '2_https_forzado' => request()->isSecure() ? 'Sí (Correcto)' : 'No (Peligro de CORS)',
-        '3_limite_peso_php' => ini_get('upload_max_filesize'),
-        '4_carpeta_existe' => is_dir($livewireTmpPath) ? 'Sí' : 'No',
-        '5_permisos_escritura' => $canWrite === true ? 'Sí (Correcto)' : $canWrite,
-        '6_ruta_real_servidor' => $livewireTmpPath,
+        '2_https_forzado' => request()->isSecure() ? 'Sí (Correcto)' : 'No (Peligro: Livewire puede bloquear uploads HTTP en Railway)',
+        '3_limite_upload_max_filesize' => ini_get('upload_max_filesize'),
+        '4_limite_post_max_size' => ini_get('post_max_size'),
+        '5_config_livewire_upload' => config('livewire.temporary_file_upload'),
+        '6_disco_local_path' => \Illuminate\Support\Facades\Storage::disk('local')->path(''),
+        '7_livewire_tmp_existe' => is_dir($livewireTmpPath) ? 'Sí' : 'No',
+        '8_livewire_tmp_permisos_escritura' => $canWriteLivewire === true ? 'OK (Escritura exitosa)' : $canWriteLivewire,
+        '9_temp_imports_permisos_escritura' => $canWriteImports === true ? 'OK (Escritura exitosa)' : $canWriteImports,
+        '10_ultimos_logs_servidor' => $recentLogs,
     ]);
 });
