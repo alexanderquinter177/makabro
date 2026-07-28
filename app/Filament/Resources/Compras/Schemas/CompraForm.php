@@ -22,6 +22,39 @@ use Filament\Support\RawJs;
 
 class CompraForm
 {
+    /**
+     * Parsea un valor numérico ingresado desde la UI o devuelto por la Base de Datos.
+     * Evita que valores decimales de la BD (ej. '25000.00') se conviertan erróneamente en '2500000'.
+     */
+    public static function parseNumericValue($value): float
+    {
+        if (is_null($value) || $value === '') {
+            return 0.0;
+        }
+        
+        if (is_float($value) || is_int($value)) {
+            return floatval($value);
+        }
+
+        $str = trim((string) $value);
+
+        // 1. Si viene de la BD como '25000.00' o '25000.50' (Punto decimal con 2 o 4 decimales sin formato de miles)
+        if (preg_match('/^\d{4,}\.\d{1,4}$/', $str) || preg_match('/^\d{1,3}\.\d{1,2}$/', $str)) {
+            return floatval($str);
+        }
+
+        // 2. Si viene de la BD como entero puro '25000' o '0'
+        if (preg_match('/^\d+$/', $str)) {
+            return floatval($str);
+        }
+
+        // 3. Si viene formateado de la UI con puntos como separadores de miles (ej: '25.000', '$ 25.000', '1.250.000')
+        $clean = str_replace(['$', ' '], '', $str);
+        $clean = str_replace('.', '', $clean);
+        $clean = str_replace(',', '.', $clean);
+
+        return floatval($clean);
+    }
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -287,7 +320,7 @@ class CompraForm
                                                         $items = $get('../../items') ?? [];
                                                         $grandTotal = 0;
                                                         foreach ($items as $item) {
-                                                            $grandTotal += floatval(str_replace('.', '', $item['total'] ?? 0));
+                                                            $grandTotal += self::parseNumericValue($item['total'] ?? 0);
                                                         }
                                                         $set('../../subtotal', number_format($grandTotal, 0, ',', '.'));
                                                         $set('../../total', number_format($grandTotal, 0, ',', '.'));
@@ -377,7 +410,7 @@ class CompraForm
                                                          $items = $get('../../items') ?? [];
                                                          $grandTotal = 0;
                                                          foreach ($items as $item) {
-                                                             $grandTotal += floatval(str_replace('.', '', $item['total'] ?? 0));
+                                                             $grandTotal += self::parseNumericValue($item['total'] ?? 0);
                                                          }
                                                          $set('../../subtotal', number_format($grandTotal, 0, ',', '.'));
                                                          $set('../../total', number_format($grandTotal, 0, ',', '.'));
@@ -398,7 +431,7 @@ class CompraForm
                                             ->columnSpan(2)
                                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                                  $precioRaw = $get('precio_unitario') ?? 0;
-                                                 $precio = floatval(str_replace('.', '', $precioRaw));
+                                                 $precio = self::parseNumericValue($precioRaw);
                                                  $cantidad = floatval($state);
                                                  $totalCalc = round($cantidad * $precio, 0);
                                                  $set('total', number_format($totalCalc, 0, ',', '.'));
@@ -406,7 +439,7 @@ class CompraForm
                                                  $items = $get('../../items') ?? [];
                                                  $grandTotal = 0;
                                                  foreach ($items as $item) {
-                                                     $grandTotal += floatval(str_replace('.', '', $item['total'] ?? 0));
+                                                     $grandTotal += self::parseNumericValue($item['total'] ?? 0);
                                                  }
                                                  $set('../../subtotal', number_format($grandTotal, 0, ',', '.'));
                                                  $set('../../total', number_format($grandTotal, 0, ',', '.'));
@@ -421,19 +454,19 @@ class CompraForm
                                             ->placeholder('0')
                                             ->columnSpan(2)
                                             ->mask(RawJs::make('$money($input, ",", ".", 0)'))
-                                            ->dehydrateStateUsing(fn ($state) => $state !== null ? str_replace('.', '', $state) : null)
-                                            ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) str_replace('.', '', $state), 0, ',', '.') : '')
+                                            ->dehydrateStateUsing(fn ($state) => $state !== null ? self::parseNumericValue($state) : null)
+                                            ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) self::parseNumericValue($state), 0, ',', '.') : '')
                                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                                  $cantidadRaw = $get('cantidad') ?? 0;
                                                  $cantidad = floatval($cantidadRaw);
-                                                 $precio = floatval(str_replace('.', '', $state));
+                                                 $precio = self::parseNumericValue($state);
                                                  $totalCalc = round($cantidad * $precio, 0);
                                                  $set('total', number_format($totalCalc, 0, ',', '.'));
 
                                                  $items = $get('../../items') ?? [];
                                                  $grandTotal = 0;
                                                  foreach ($items as $item) {
-                                                     $grandTotal += floatval(str_replace('.', '', $item['total'] ?? 0));
+                                                     $grandTotal += self::parseNumericValue($item['total'] ?? 0);
                                                  }
                                                  $set('../../subtotal', number_format($grandTotal, 0, ',', '.'));
                                                  $set('../../total', number_format($grandTotal, 0, ',', '.'));
@@ -448,8 +481,8 @@ class CompraForm
                                             ->placeholder('0')
                                             ->columnSpan(2)
                                             ->mask(RawJs::make('$money($input, ",", ".", 0)'))
-                                            ->dehydrateStateUsing(fn ($state) => $state !== null ? str_replace('.', '', $state) : null)
-                                            ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) str_replace('.', '', $state), 0, ',', '.') : ''),
+                                            ->dehydrateStateUsing(fn ($state) => $state !== null ? self::parseNumericValue($state) : null)
+                                            ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) self::parseNumericValue($state), 0, ',', '.') : ''),
                                     ])
                                     ->columnSpanFull(),
                             ])
@@ -462,8 +495,7 @@ class CompraForm
                                  $items = $get('items') ?? [];
                                  $subtotal = 0;
                                  foreach ($items as $item) {
-                                     $itemTotal = floatval(str_replace('.', '', $item['total'] ?? 0));
-                                     $subtotal += $itemTotal;
+                                     $subtotal += self::parseNumericValue($item['total'] ?? 0);
                                  }
                                  $set('subtotal', number_format($subtotal, 0, ',', '.'));
                                  $set('total', number_format($subtotal, 0, ',', '.'));
@@ -493,9 +525,9 @@ class CompraForm
                                     ->placeholder('0')
                                     ->readOnly()
                                     ->mask(RawJs::make('$money($input, ",", ".", 0)'))
-                                    ->dehydrateStateUsing(fn ($state) => $state !== null ? str_replace('.', '', $state) : null)
+                                    ->dehydrateStateUsing(fn ($state) => $state !== null ? self::parseNumericValue($state) : null)
                                     ->validationAttribute('Total a Pagar')
-                                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 0, ',', '.') : '')
+                                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) self::parseNumericValue($state), 0, ',', '.') : '')
                                     ->extraAttributes([
                                         'class' => 'font-bold text-xl text-primary-600 text-center',
                                     ]),

@@ -42,24 +42,40 @@ class ListInventarioSedes extends ListRecords
                         // BOM para UTF-8 en Excel
                         fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
                         
-                        // Encabezados
-                        fputcsv($output, ['codigo', 'nombre_producto', 'cantidad_inicial', 'stock_minimo', 'stock_maximo'], ';');
+                        // Encabezados en MAYÚSCULAS
+                        fputcsv($output, ['PRODUCTO_ID', 'CODIGO', 'NOMBRE_PRODUCTO', 'CATEGORIA', 'TIPO_PRODUCTO', 'UNIDAD_MEDIDA', 'CANTIDAD_INICIAL', 'STOCK_MINIMO', 'STOCK_MAXIMO'], ';');
                         
-                        // Cargar TODOS los productos activos
+                        // Cargar TODOS los Insumos y Subrecetas activos ordenados por Categoría y Nombre
                         Producto::query()
-                            ->where('activo', true)
-                            ->orderBy('nombre')
+                            ->select('productos.*')
+                            ->leftJoin('categorias', 'productos.categoria_id', '=', 'categorias.id')
+                            ->whereIn('productos.tipo', ['insumo', 'subensamble'])
+                            ->where('productos.activo', true)
+                            ->orderBy('categorias.nombre', 'asc')
+                            ->orderBy('productos.nombre', 'asc')
+                            ->with(['categoria', 'unidadCompra'])
                             ->chunk(100, function ($productos) use ($output, $sedeId) {
                                 foreach ($productos as $prod) {
                                     $inv = $sedeId ? InventarioSede::where('sede_id', $sedeId)->where('producto_id', $prod->id)->first() : null;
                                     
-                                    $cantidad = $inv ? $inv->cantidad_actual : 0;
-                                    $minimo   = $inv ? $inv->stock_minimo : 10;
-                                    $maximo   = $inv ? $inv->stock_maximo : 100;
+                                    // Usar valores reales de la BD sin inventar valores por defecto
+                                    $cantidad = $inv ? floatval($inv->cantidad_actual) : 0;
+                                    $minimo   = $inv ? floatval($inv->stock_minimo) : 0;
+                                    $maximo   = $inv ? floatval($inv->stock_maximo) : 0;
+                                    
+                                    $categoriaLimpia = strtoupper(\Illuminate\Support\Str::ascii($prod->categoria?->nombre ?? 'GENERAL'));
+                                    $tipoLabel      = $prod->tipo === 'subensamble' ? 'SUBRECETA' : 'INSUMO';
+                                    $unidadLimpia   = strtoupper(\Illuminate\Support\Str::ascii($prod->unidadCompra?->abreviatura ?? $prod->unidadCompra?->nombre ?? 'UND'));
+                                    $codigoLimpio   = strtoupper(\Illuminate\Support\Str::ascii($prod->codigo ?? ''));
+                                    $nombreLimpio   = strtoupper(\Illuminate\Support\Str::ascii($prod->nombre ?? ''));
 
                                     fputcsv($output, [
-                                        $prod->codigo,
-                                        $prod->nombre,
+                                        $prod->id,
+                                        $codigoLimpio,
+                                        $nombreLimpio,
+                                        $categoriaLimpia,
+                                        $tipoLabel,
+                                        $unidadLimpia,
                                         $cantidad,
                                         $minimo,
                                         $maximo
