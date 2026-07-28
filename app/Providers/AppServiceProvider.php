@@ -40,7 +40,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Forzar HTTPS en producción (Railway) para evitar el bloqueo de Livewire
-        if (config('app.env') === 'production') {
+        if (config('app.env') === 'production' || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')) {
             URL::forceScheme('https');
         }
 
