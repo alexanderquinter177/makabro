@@ -192,7 +192,8 @@ class CompraForm
                                         column: 'numero_factura',
                                         ignoreRecord: true,
                                         modifyRuleUsing: function ($rule, $get) {
-                                            return $rule->where('proveedor_id', $get('proveedor_id'));
+                                            return $rule->where('proveedor_id', $get('proveedor_id'))
+                                                        ->whereNull('deleted_at');
                                         }
                                     )
                                     ->maxLength(255)
