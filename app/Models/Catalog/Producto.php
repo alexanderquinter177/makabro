@@ -112,27 +112,49 @@ class Producto extends Model
     // Métodos para generar código automático
     // -------------------------------------------------------------------------
 
-    public static function generarCodigo(string $tipo, int $categoriaId): string
+    public static function generarCodigo(?string $tipo = null, ?int $categoriaId = null): string
     {
-        $prefijoTipo = self::getPrefijoTipo($tipo);
+        $tipoActual = $tipo ?: 'insumo';
+        $prefijoTipo = self::getPrefijoTipo($tipoActual);
         
-        $categoria = Categoria::find($categoriaId);
-        $codigoCategoria = $categoria ? strtoupper(substr($categoria->nombre, 0, 3)) : 'GEN';
-        
-        $ultimo = self::where('tipo', $tipo)
-                      ->where('categoria_id', $categoriaId)
-                      ->orderBy('id', 'desc')
-                      ->first();
-        
-        if ($ultimo && preg_match('/-(\d{3})$/', $ultimo->codigo, $matches)) {
-            $numero = intval($matches[1]) + 1;
-        } else {
-            $numero = 1;
+        $codigoCategoria = 'GEN';
+        if ($categoriaId) {
+            $categoria = Categoria::find($categoriaId);
+            if ($categoria && !empty($categoria->nombre)) {
+                $codigoCategoria = strtoupper(substr(trim($categoria->nombre), 0, 3));
+            }
         }
         
-        $numeroFormateado = str_pad($numero, 3, '0', STR_PAD_LEFT);
-        
-        return "{$prefijoTipo}-{$codigoCategoria}-{$numeroFormateado}";
+        $prefix = "{$prefijoTipo}-{$codigoCategoria}-";
+
+        // Obtener todos los códigos que inician con el prefijo, incluyendo soft-deleted
+        $codigos = self::withTrashed()
+            ->where('codigo', 'LIKE', "{$prefix}%")
+            ->pluck('codigo');
+
+        $maxNumero = 0;
+        foreach ($codigos as $cod) {
+            if (preg_match('/-(\d{3,})$/', $cod, $matches)) {
+                $num = intval($matches[1]);
+                if ($num > $maxNumero) {
+                    $maxNumero = $num;
+                }
+            }
+        }
+
+        $numero = $maxNumero + 1;
+
+        // Asegurar que el código candidato no exista en la base de datos (incluso soft-deleted)
+        do {
+            $numeroFormateado = str_pad($numero, 3, '0', STR_PAD_LEFT);
+            $candidate = "{$prefix}{$numeroFormateado}";
+            $exists = self::withTrashed()->where('codigo', $candidate)->exists();
+            if ($exists) {
+                $numero++;
+            }
+        } while ($exists);
+
+        return $candidate;
     }
 
     private static function getPrefijoTipo(string $tipo): string
@@ -159,6 +181,15 @@ class Producto extends Model
         parent::boot();
 
         static::creating(function ($producto) {
+            if (empty($producto->tipo)) {
+                $producto->tipo = 'insumo';
+            }
+            if (empty($producto->categoria_id)) {
+                $primeraCat = Categoria::where('activo', true)->first();
+                if ($primeraCat) {
+                    $producto->categoria_id = $primeraCat->id;
+                }
+            }
             if (empty($producto->codigo)) {
                 $producto->codigo = self::generarCodigo(
                     $producto->tipo,

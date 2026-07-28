@@ -16,6 +16,8 @@ use Filament\Schemas\Components\Section;
 use App\Models\Catalog\Sede;
 use App\Models\Catalog\Proveedor;
 use App\Models\Catalog\Producto;
+use App\Models\Catalog\UnidadMedida;
+use App\Models\Catalog\Categoria;
 use App\Models\Auth\User;
 
 use Filament\Support\RawJs;
@@ -295,10 +297,17 @@ class CompraForm
                                             ->reactive()
                                             ->createOptionForm([
                                                 TextInput::make('nombre')->label('Nombre')->required()->validationAttribute('Nombre'),
+                                                Select::make('categoria_id')
+                                                    ->label('Categoría')
+                                                    ->options(Categoria::activas()->pluck('nombre', 'id'))
+                                                    ->required()
+                                                    ->searchable()
+                                                    ->validationAttribute('Categoría'),
                                                 Select::make('unidad_compra_id')
                                                     ->label('Unidad de Compra')
-                                                    ->relationship('unidadCompra', 'nombre')
+                                                    ->options(UnidadMedida::activos()->pluck('nombre', 'id'))
                                                     ->required()
+                                                    ->searchable()
                                                     ->validationAttribute('Unidad de Compra'),
                                                 TextInput::make('precio_compra')
                                                     ->label('Precio Compra')
@@ -332,13 +341,14 @@ class CompraForm
                                         Select::make('unidad_compra')
                                             ->label('U.M.')
                                             ->placeholder('Seleccionar')
-                                            ->options([
-                                                'kg' => 'Kilogramo (kg)',
-                                                'gr' => 'Gramo (gr)',
-                                                'lt' => 'Litro (lt)',
-                                                'ml' => 'Mililitro (ml)',
-                                                'und' => 'Unidad (und)',
-                                            ])
+                                            ->options(function () {
+                                                 return UnidadMedida::activos()
+                                                     ->get()
+                                                     ->mapWithKeys(fn ($um) => [
+                                                         $um->abreviatura => "{$um->nombre} ({$um->abreviatura})"
+                                                     ])
+                                                     ->toArray();
+                                             })
                                             ->required()
                                             ->validationAttribute('U.M.')
                                             ->searchable()
@@ -375,10 +385,26 @@ class CompraForm
                                                              } else {
                                                                  $compatible = false;
                                                              }
+                                                         } elseif ($baseUnit === 'kg') {
+                                                             if ($selectedUnit === 'gr') {
+                                                                 $factor = 0.001;
+                                                             } elseif ($selectedUnit === 'kg') {
+                                                                 $factor = 1;
+                                                             } else {
+                                                                 $compatible = false;
+                                                             }
                                                          } elseif ($baseUnit === 'ml') {
-                                                             if ($selectedUnit === 'lt') {
+                                                             if (in_array($selectedUnit, ['lt', 'l'])) {
                                                                  $factor = 1000;
                                                              } elseif ($selectedUnit === 'ml') {
+                                                                 $factor = 1;
+                                                             } else {
+                                                                 $compatible = false;
+                                                             }
+                                                         } elseif (in_array($baseUnit, ['lt', 'l'])) {
+                                                             if ($selectedUnit === 'ml') {
+                                                                 $factor = 0.001;
+                                                             } elseif (in_array($selectedUnit, ['lt', 'l'])) {
                                                                  $factor = 1;
                                                              } else {
                                                                  $compatible = false;
