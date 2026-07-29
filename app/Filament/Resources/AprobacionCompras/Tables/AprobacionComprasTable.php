@@ -81,9 +81,13 @@ class AprobacionComprasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('sede_id')
-                    ->label('Sede')
-                    ->options(Sede::pluck('nombre', 'id')->toArray()),
+                SelectFilter::make('status')
+                    ->label('Estado')
+                    ->options([
+                        'pendiente' => '⏳ Pendiente',
+                        'aprobado'  => '✅ Aprobado',
+                        'rechazado' => '❌ Rechazado',
+                    ]),
 
                 SelectFilter::make('proveedor_id')
                     ->label('Proveedor')
@@ -147,6 +151,19 @@ class AprobacionComprasTable
             ])
             ->recordActions([
                 ViewAction::make(),
+            ])
+            ->headerActions([
+                Action::make('exportExcel')
+                    ->label('Descargar Excel')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->action(function ($livewire) {
+                        $query = $livewire->getFilteredTableQuery();
+                        return \Maatwebsite\Excel\Facades\Excel::download(
+                            new \App\Exports\ComprasExport($query),
+                            'reporte_aprobacion_compras_' . now()->format('Y-m-d_H-i') . '.xlsx'
+                        );
+                    }),
             ])
             ->bulkActions([
                 // Las aprobaciones no se borran en lote por seguridad

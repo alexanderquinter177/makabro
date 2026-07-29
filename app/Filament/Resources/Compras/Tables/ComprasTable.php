@@ -83,9 +83,14 @@ class ComprasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('sede_id')
-                    ->label('Sede')
-                    ->options(Sede::pluck('nombre', 'id')->toArray()),
+                SelectFilter::make('status')
+                    ->label('Estado')
+                    ->options([
+                        'borrador'  => '📝 Borrador',
+                        'pendiente' => '⏳ Pendiente de Aprobación',
+                        'aprobado'  => '✅ Aprobado',
+                        'rechazado' => '❌ Rechazado',
+                    ]),
 
                 SelectFilter::make('proveedor_id')
                     ->label('Proveedor')
@@ -129,6 +134,19 @@ class ComprasTable
             })
             ->recordActions([
                 ViewAction::make(),
+            ])
+            ->headerActions([
+                Action::make('exportExcel')
+                    ->label('Descargar Excel')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->action(function ($livewire) {
+                        $query = $livewire->getFilteredTableQuery();
+                        return \Maatwebsite\Excel\Facades\Excel::download(
+                            new \App\Exports\ComprasExport($query),
+                            'reporte_compras_' . now()->format('Y-m-d_H-i') . '.xlsx'
+                        );
+                    }),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
