@@ -457,11 +457,19 @@ class CompraForm
                                             ->prefixIcon('heroicon-o-calculator')
                                             ->columnSpan(2)
                                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                                 $precioRaw = $get('precio_unitario') ?? 0;
-                                                 $precio = self::parseNumericValue($precioRaw);
                                                  $cantidad = floatval($state);
-                                                 $totalCalc = round($cantidad * $precio, 0);
-                                                 $set('total', number_format($totalCalc, 0, ',', '.'));
+                                                 $precio = self::parseNumericValue($get('precio_unitario') ?? 0);
+                                                 $total = self::parseNumericValue($get('total') ?? 0);
+
+                                                 if ($cantidad > 0) {
+                                                     if ($precio > 0) {
+                                                         $totalCalc = round($cantidad * $precio, 0);
+                                                         $set('total', number_format($totalCalc, 0, ',', '.'));
+                                                     } elseif ($total > 0) {
+                                                         $precioCalc = round($total / $cantidad, 2);
+                                                         $set('precio_unitario', number_format($precioCalc, 0, ',', '.'));
+                                                     }
+                                                 }
 
                                                  $items = $get('../../items') ?? [];
                                                  $grandTotal = 0;
@@ -484,8 +492,7 @@ class CompraForm
                                             ->dehydrateStateUsing(fn ($state) => $state !== null ? self::parseNumericValue($state) : null)
                                             ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) self::parseNumericValue($state), 0, ',', '.') : '')
                                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                                 $cantidadRaw = $get('cantidad') ?? 0;
-                                                 $cantidad = floatval($cantidadRaw);
+                                                 $cantidad = floatval($get('cantidad') ?? 0);
                                                  $precio = self::parseNumericValue($state);
                                                  $totalCalc = round($cantidad * $precio, 0);
                                                  $set('total', number_format($totalCalc, 0, ',', '.'));
@@ -503,13 +510,30 @@ class CompraForm
                                             ->label('Total')
                                             ->required()
                                             ->validationAttribute('Total')
-                                            ->readOnly()
+                                            ->live(debounce: 250)
                                             ->prefix('$')
                                             ->placeholder('0')
                                             ->columnSpan(2)
                                             ->mask(RawJs::make('$money($input, ",", ".", 0)'))
                                             ->dehydrateStateUsing(fn ($state) => $state !== null ? self::parseNumericValue($state) : null)
-                                            ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) self::parseNumericValue($state), 0, ',', '.') : ''),
+                                            ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) self::parseNumericValue($state), 0, ',', '.') : '')
+                                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                                 $total = self::parseNumericValue($state);
+                                                 $cantidad = floatval($get('cantidad') ?? 0);
+
+                                                 if ($cantidad > 0 && $total > 0) {
+                                                     $precioCalc = round($total / $cantidad, 2);
+                                                     $set('precio_unitario', number_format($precioCalc, 0, ',', '.'));
+                                                 }
+
+                                                 $items = $get('../../items') ?? [];
+                                                 $grandTotal = 0;
+                                                 foreach ($items as $item) {
+                                                     $grandTotal += self::parseNumericValue($item['total'] ?? 0);
+                                                 }
+                                                 $set('../../subtotal', number_format($grandTotal, 0, ',', '.'));
+                                                 $set('../../total', number_format($grandTotal, 0, ',', '.'));
+                                             }),
                                     ])
                                     ->columnSpanFull(),
                             ])
