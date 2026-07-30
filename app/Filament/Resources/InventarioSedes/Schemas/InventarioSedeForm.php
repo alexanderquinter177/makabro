@@ -19,17 +19,29 @@ class InventarioSedeForm
                     ->schema([
                         Select::make('sede_id')
                             ->label('Sede')
-                            ->options(Sede::pluck('nombre', 'id'))
+                            ->options(Sede::where('activo', true)->pluck('nombre', 'id'))
                             ->required()
                             ->searchable()
-                            ->placeholder('Seleccione la sede'),
+                            ->placeholder('Seleccione la sede')
+                            ->disabled(true)
+                            ->dehydrated()
+                            ->default(fn () => session('sede_id')),
 
                         Select::make('producto_id')
                             ->label('Producto / Insumo')
                             ->options(Producto::pluck('nombre', 'id'))
                             ->required()
                             ->searchable()
-                            ->placeholder('Seleccione el producto'),
+                            ->placeholder('Seleccione el producto')
+                            ->unique(
+                                table: 'inventario_sedes',
+                                column: 'producto_id',
+                                ignoreRecord: true,
+                                modifyRuleUsing: fn (\Illuminate\Validation\Rules\Unique $rule, callable $get) => $rule->where('sede_id', $get('sede_id'))
+                            )
+                            ->validationMessages([
+                                'unique' => 'Este producto ya cuenta con un registro de inventario en la sede seleccionada.',
+                            ]),
 
                         TextInput::make('cantidad_actual')
                             ->label('Cantidad Actual')
