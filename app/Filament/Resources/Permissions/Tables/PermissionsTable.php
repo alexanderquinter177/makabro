@@ -38,25 +38,21 @@ class PermissionsTable
 
                 TextColumn::make('module')
                     ->label('Módulo')
-                    ->searchable()
-                    ->sortable()
-                    ->badge()
-                    ->color('primary')
-                    ->formatStateUsing(function ($record) {
+                    ->state(function ($record) {
                         $parts = explode('.', $record->name);
                         return Str::title(str_replace('_', ' ', $parts[0] ?? ''));
-                    }),
+                    })
+                    ->badge()
+                    ->color('primary'),
 
                 TextColumn::make('action')
                     ->label('Acción')
-                    ->searchable()
-                    ->sortable()
-                    ->badge()
-                    ->color('success')
-                    ->formatStateUsing(function ($record) {
+                    ->state(function ($record) {
                         $parts = explode('.', $record->name);
                         return Str::title(str_replace('_', ' ', $parts[1] ?? ''));
-                    }),
+                    })
+                    ->badge()
+                    ->color('success'),
 
                 TextColumn::make('guard_name')
                     ->label('Guard')
@@ -98,6 +94,11 @@ class PermissionsTable
                         return $modules->mapWithKeys(function ($module) {
                             return [$module => Str::title(str_replace('_', ' ', $module))];
                         })->toArray();
+                    })
+                    ->query(function ($query, array $data) {
+                        if (!empty($data['value'])) {
+                            $query->where('name', 'like', $data['value'] . '.%');
+                        }
                     })
                     ->preload(),
 

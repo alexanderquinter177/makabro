@@ -48,5 +48,22 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
             return $user->hasRole('super_admin') ? true : null;
         });
+
+        // Mapeo explícito de Modelos a Políticas (debido a sub-namespaces de App\Models\*)
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Auth\User::class, \App\Policies\UserPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\Spatie\Permission\Models\Role::class, \App\Policies\RolePolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\Spatie\Permission\Models\Permission::class, \App\Policies\PermissionPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Catalog\Sede::class, \App\Policies\SedePolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Catalog\Producto::class, \App\Policies\ProductoPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Catalog\Categoria::class, \App\Policies\CategoriaPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Catalog\Proveedor::class, \App\Policies\ProveedorPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Catalog\UnidadMedida::class, \App\Policies\UnidadMedidaPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Purchase\Compra::class, \App\Policies\CompraPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Inventory\Inventario::class, \App\Policies\InventarioPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Inventory\InventarioSede::class, \App\Policies\InventarioSedePolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Inventory\KardexMovimiento::class, \App\Policies\KardexMovimientoPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Inventory\Novedad::class, \App\Policies\NovedadPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Audit\Auditoria::class, \App\Policies\AuditoriaPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Inventory\SalesReportImport::class, \App\Policies\SalesReportImportPolicy::class);
     }
 }

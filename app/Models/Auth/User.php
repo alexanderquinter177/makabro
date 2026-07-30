@@ -46,6 +46,7 @@ class User extends Authenticatable implements FilamentUser
         'cargo',
         'telefono',
         'activo',
+        'current_session_id',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -94,6 +95,14 @@ class User extends Authenticatable implements FilamentUser
         return $this->belongsToMany(Sede::class, 'sede_user', 'user_id', 'sede_id')
                     ->withTimestamps()
                     ->withPivot('activo', 'cargo_sede');
+    }
+
+    /**
+     * Asignaciones de sedes (para Repeater en Filament)
+     */
+    public function userSedes(): HasMany
+    {
+        return $this->hasMany(SedeUser::class, 'user_id');
     }
 
     /**

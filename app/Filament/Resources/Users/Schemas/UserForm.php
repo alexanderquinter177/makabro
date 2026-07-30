@@ -107,8 +107,8 @@ class UserForm
                     ->icon('heroicon-o-building-office')
                     ->description('Asigne las sedes a las que este usuario tiene acceso y su rol o cargo en cada una.')
                     ->schema([
-                        Repeater::make('sedes')
-                            ->relationship('sedes')
+                        Repeater::make('userSedes')
+                            ->relationship('userSedes')
                             ->schema([
                                 Select::make('sede_id')
                                     ->label('Sede')

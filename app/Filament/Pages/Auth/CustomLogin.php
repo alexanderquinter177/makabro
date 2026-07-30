@@ -94,12 +94,15 @@ class CustomLogin extends BaseLogin
             // 4. Hacer login manualmente
             \Filament\Facades\Filament::auth()->login($user, false);
 
-            // 5. Si tiene exactamente una sede, guardarla en sesión inmediatamente
+            // 5. Regenerar sesión y guardar el ID de sesión activo en el usuario para invalidar otros navegadores/dispositivos
+            session()->regenerate();
+            $user->current_session_id = session()->getId();
+            $user->save();
+
+            // 6. Si tiene exactamente una sede, guardarla en sesión inmediatamente
             if ($sedesActivas->count() === 1) {
                 session(['sede_id' => $sedesActivas->first()->id]);
             }
-
-            session()->regenerate();
 
             return app(LoginResponse::class);
 

@@ -306,7 +306,6 @@ class GestionPanelProvider extends PanelProvider
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
-                AuthenticateSession::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
                 SubstituteBindings::class,
@@ -315,6 +314,8 @@ class GestionPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                AuthenticateSession::class,
+                \App\Http\Middleware\CheckSingleSession::class,
                 \App\Http\Middleware\CheckSelectedSede::class,
             ]);
     }
