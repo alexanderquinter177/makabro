@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasAuditSignature;
 use App\Models\Catalog\Sede;
 use App\Models\Auth\User;
-use App\Models\Recipe\Plato;
 use App\Models\Catalog\Producto;
 
 class Novedad extends Model
@@ -56,6 +55,14 @@ class Novedad extends Model
         'deleted_at'  => 'datetime',
     ];
 
+    /**
+     * Mutador para asegurar que responsable_nombre siempre se guarde en MAYÚSCULAS.
+     */
+    public function setResponsableNombreAttribute(?string $value): void
+    {
+        $this->attributes['responsable_nombre'] = $value ? mb_strtoupper($value, 'UTF-8') : null;
+    }
+
     // -------------------------------------------------------------------------
     // Relaciones
     // -------------------------------------------------------------------------
@@ -78,10 +85,10 @@ class Novedad extends Model
         return $this->belongsTo(User::class, 'responsable_id');
     }
 
-    /** Plato afectado (si tipo_afectado = 'plato') */
+    /** Plato / Producto afectado (si tipo_afectado = 'plato') */
     public function plato(): BelongsTo
     {
-        return $this->belongsTo(Plato::class);
+        return $this->belongsTo(Producto::class, 'plato_id');
     }
 
     /** Producto afectado (si tipo_afectado = 'producto') */

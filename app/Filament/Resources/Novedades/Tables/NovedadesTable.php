@@ -13,6 +13,8 @@ use Filament\Tables\Table;
 use App\Models\Catalog\Sede;
 use App\Models\Catalog\Producto;
 use App\Models\Auth\User;
+use Filament\Actions\Action;
+use App\Models\Inventory\Novedad;
 
 class NovedadesTable
 {
@@ -38,20 +40,21 @@ class NovedadesTable
                         'quemado' => 'danger',
                         'vencimiento' => 'info',
                         'daño' => 'danger',
-                        'devolución' => 'primary',
-                        'pérdida/robo' => 'gray',
+                        'devolución' => 'gray',
+                        'pérdida/robo' => 'danger',
                         default => 'gray',
                     })
+                    ->searchable()
                     ->sortable(),
 
                 TextColumn::make('area')
                     ->label('Área')
-                    ->sortable(),
-
-                TextColumn::make('producto.nombre')
-                    ->label('Producto')
                     ->searchable()
                     ->sortable(),
+
+                TextColumn::make('tipo_afectado')
+                    ->label('Afectado')
+                    ->searchable(),
 
                 TextColumn::make('cantidad')
                     ->label('Cantidad')
@@ -59,25 +62,24 @@ class NovedadesTable
                     ->sortable(),
 
                 TextColumn::make('valor_costo')
-                    ->label('Costo')
+                    ->label('Valor Costo')
                     ->money('COP')
                     ->sortable(),
 
                 TextColumn::make('valor_cobro')
-                    ->label('Cobro')
+                    ->label('Valor Cobro')
                     ->money('COP')
                     ->sortable(),
 
                 TextColumn::make('estado_cobro')
-                    ->label('Cobro Estado')
+                    ->label('Estado Cobro')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'si' => 'success',
-                        'no' => 'gray',
+                        'si' => 'danger',
+                        'no' => 'success',
                         'pendiente' => 'warning',
                         default => 'gray',
-                    })
-                    ->sortable(),
+                    }),
 
                 ImageColumn::make('evidencia_imagen')
                     ->label('Evidencia')
@@ -113,6 +115,12 @@ class NovedadesTable
                     ]),
             ])
             ->recordActions([
+                Action::make('imprimir')
+                    ->label('Imprimir Carta')
+                    ->icon('heroicon-o-printer')
+                    ->color('info')
+                    ->url(fn (Novedad $record): string => route('novedades.imprimir', $record))
+                    ->openUrlInNewTab(),
                 ViewAction::make(),
                 EditAction::make(),
             ])

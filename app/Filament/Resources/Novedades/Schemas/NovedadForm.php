@@ -49,10 +49,8 @@ class NovedadForm
                                     ->label('Empleado Responsable')
                                     ->maxLength(255)
                                     ->placeholder('Escriba el nombre del empleado')
-                                    ->reactive()
-                                    ->afterStateUpdated(fn ($state, $set) => $set('responsable_nombre', strtoupper($state)))
-                                    ->afterStateHydrated(fn ($state, $set) => $set('responsable_nombre', strtoupper($state)))
-                                    ->formatStateUsing(fn ($state) => strtoupper($state)),
+                                    ->dehydrateStateUsing(fn (?string $state): ?string => $state ? mb_strtoupper($state, 'UTF-8') : null)
+                                    ->formatStateUsing(fn (?string $state): ?string => $state ? mb_strtoupper($state, 'UTF-8') : null),
                             ])
                             ->columnSpanFull(),
 

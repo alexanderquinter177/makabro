@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasAuditSignature;
 use App\Models\Auth\User;
 use App\Models\Purchase\Compra;
-use App\Models\Recipe\Plato;
 use App\Models\Inventory\Inventario;
 use App\Models\Inventory\Novedad;
 use App\Models\Audit\Auditoria;

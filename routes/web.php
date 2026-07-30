@@ -3,11 +3,17 @@
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Auth\SelectSede;
 
+use App\Http\Controllers\NovedadPrintController;
+
 Route::redirect('/gestion', '/');
 Route::redirect('/gestion/login', '/login');
 
 Route::get('/select-sede', SelectSede::class)
     ->name('select-sede')
+    ->middleware('auth');
+
+Route::get('/novedades/{novedad}/imprimir', NovedadPrintController::class)
+    ->name('novedades.imprimir')
     ->middleware('auth');
 
 Route::get('/debug-upload', function () {
