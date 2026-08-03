@@ -5,10 +5,13 @@ namespace App\Filament\Widgets;
 use App\Models\Purchase\Compra;
 use App\Models\Inventory\Novedad;
 use Filament\Widgets\ChartWidget;
+use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Illuminate\Support\Carbon;
 
 class TendenciaComprasMermasWidget extends ChartWidget
 {
+    use InteractsWithPageFilters;
+
     protected static ?int $sort = 2;
 
     protected int | string | array $columnSpan = [
@@ -23,7 +26,7 @@ class TendenciaComprasMermasWidget extends ChartWidget
     // Propiedades de instancia (no estáticas) — tal como las define ChartWidget base
     protected ?string $heading = 'Tendencia: Compras vs Mermas';
 
-    protected ?string $description = 'Comparativo de los últimos 6 meses';
+    protected ?string $description = 'Comparativo del período seleccionado';
 
     protected ?string $maxHeight = '300px';
 
@@ -33,27 +36,76 @@ class TendenciaComprasMermasWidget extends ChartWidget
     {
         $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual;
 
+        $startDateRaw = $this->filters['startDate'] ?? null;
+        $endDateRaw   = $this->filters['endDate'] ?? null;
+
         $meses   = [];
         $compras = [];
         $mermas  = [];
 
-        for ($i = 5; $i >= 0; $i--) {
-            $mes    = Carbon::now()->subMonths($i);
-            $inicio = $mes->copy()->startOfMonth();
-            $fin    = $mes->copy()->endOfMonth();
+        if ($startDateRaw && $endDateRaw) {
+            $start = Carbon::parse($startDateRaw)->startOfDay();
+            $end   = Carbon::parse($endDateRaw)->endOfDay();
+            $diffDays = $start->diffInDays($end);
 
-            $meses[] = ucfirst($mes->translatedFormat('M Y'));
+            if ($diffDays <= 31) {
+                $period = \Carbon\CarbonPeriod::create($start, $end);
+                foreach ($period as $date) {
+                    $dayStart = $date->copy()->startOfDay();
+                    $dayEnd   = $date->copy()->endOfDay();
 
-            $compras[] = (float) Compra::query()
-                ->when($sedeId, fn ($q) => $q->deSede($sedeId))
-                ->where('status', 'aprobado')
-                ->whereBetween('fecha_factura', [$inicio, $fin])
-                ->sum('total');
+                    $meses[] = $date->format('d/m');
 
-            $mermas[] = (float) Novedad::query()
-                ->when($sedeId, fn ($q) => $q->deSede($sedeId))
-                ->whereBetween('created_at', [$inicio, $fin])
-                ->sum('valor_costo');
+                    $compras[] = (float) Compra::query()
+                        ->when($sedeId, fn ($q) => $q->deSede($sedeId))
+                        ->where('status', 'aprobado')
+                        ->whereBetween('fecha_factura', [$dayStart, $dayEnd])
+                        ->sum('total');
+
+                    $mermas[] = (float) Novedad::query()
+                        ->when($sedeId, fn ($q) => $q->deSede($sedeId))
+                        ->whereBetween('created_at', [$dayStart, $dayEnd])
+                        ->sum('valor_costo');
+                }
+            } else {
+                $period = \Carbon\CarbonPeriod::create($start->copy()->startOfMonth(), '1 month', $end->copy()->startOfMonth());
+                foreach ($period as $date) {
+                    $monthStart = $date->copy()->startOfMonth();
+                    $monthEnd   = $date->copy()->endOfMonth();
+
+                    $meses[] = ucfirst($date->translatedFormat('M Y'));
+
+                    $compras[] = (float) Compra::query()
+                        ->when($sedeId, fn ($q) => $q->deSede($sedeId))
+                        ->where('status', 'aprobado')
+                        ->whereBetween('fecha_factura', [$monthStart, $monthEnd])
+                        ->sum('total');
+
+                    $mermas[] = (float) Novedad::query()
+                        ->when($sedeId, fn ($q) => $q->deSede($sedeId))
+                        ->whereBetween('created_at', [$monthStart, $monthEnd])
+                        ->sum('valor_costo');
+                }
+            }
+        } else {
+            for ($i = 5; $i >= 0; $i--) {
+                $mes    = Carbon::now()->subMonths($i);
+                $inicio = $mes->copy()->startOfMonth();
+                $fin    = $mes->copy()->endOfMonth();
+
+                $meses[] = ucfirst($mes->translatedFormat('M Y'));
+
+                $compras[] = (float) Compra::query()
+                    ->when($sedeId, fn ($q) => $q->deSede($sedeId))
+                    ->where('status', 'aprobado')
+                    ->whereBetween('fecha_factura', [$inicio, $fin])
+                    ->sum('total');
+
+                $mermas[] = (float) Novedad::query()
+                    ->when($sedeId, fn ($q) => $q->deSede($sedeId))
+                    ->whereBetween('created_at', [$inicio, $fin])
+                    ->sum('valor_costo');
+            }
         }
 
         return [

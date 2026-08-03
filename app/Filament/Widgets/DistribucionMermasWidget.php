@@ -4,10 +4,13 @@ namespace App\Filament\Widgets;
 
 use App\Models\Inventory\Novedad;
 use Filament\Widgets\ChartWidget;
+use Filament\Widgets\Concerns\InteractsWithPageFilters;
 use Illuminate\Support\Carbon;
 
 class DistribucionMermasWidget extends ChartWidget
 {
+    use InteractsWithPageFilters;
+
     protected static ?int $sort = 3;
 
     protected int | string | array $columnSpan = [
@@ -20,9 +23,9 @@ class DistribucionMermasWidget extends ChartWidget
     ];
 
     // Propiedades de instancia — tal como las define ChartWidget base
-    protected ?string $heading = 'Distribución de Mermas del Mes';
+    protected ?string $heading = 'Distribución de Mermas del Período';
 
-    protected ?string $description = 'Dónde se pierde más dinero este mes';
+    protected ?string $description = 'Dónde se pierde más dinero en el rango seleccionado';
 
     protected ?string $maxHeight = '300px';
 
@@ -32,8 +35,11 @@ class DistribucionMermasWidget extends ChartWidget
     {
         $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual;
 
-        $inicio = Carbon::now()->startOfMonth();
-        $fin    = Carbon::now()->endOfMonth();
+        $startDateRaw = $this->filters['startDate'] ?? null;
+        $endDateRaw   = $this->filters['endDate'] ?? null;
+
+        $inicio = $startDateRaw ? Carbon::parse($startDateRaw)->startOfDay() : Carbon::now()->startOfMonth();
+        $fin    = $endDateRaw ? Carbon::parse($endDateRaw)->endOfDay() : Carbon::now()->endOfMonth();
 
         /** @var \Illuminate\Support\Collection $datos */
         $datos = Novedad::query()
@@ -71,7 +77,7 @@ class DistribucionMermasWidget extends ChartWidget
                     'borderColor'     => '#1e1e2e',
                 ],
             ],
-            'labels' => $labels ?: ['Sin datos este mes'],
+            'labels' => $labels ?: ['Sin datos en este período'],
         ];
     }
 
