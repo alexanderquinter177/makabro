@@ -93,6 +93,7 @@ class NovedadForm
                                         'perdida' => 'Pérdida No Justificada',
                                     ],                                    
                                     '📝 Otros' => [
+                                        'Cortesia' => 'Cortesia',
                                         'otro' => 'Otro (especificar en notas)',
                                     ],                                    
                                 ])
