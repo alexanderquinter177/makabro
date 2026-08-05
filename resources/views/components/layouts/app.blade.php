@@ -15,6 +15,19 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        svg {
+            display: inline-block;
+            vertical-align: middle;
+        }
+        button {
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            font: inherit;
+            color: inherit;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="bg-[#f5f5f4] text-[#1c1917] antialiased">
