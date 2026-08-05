@@ -14,6 +14,10 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fafaf9;
+            color: #1c1917;
         }
         svg {
             display: inline-block;
@@ -27,6 +31,53 @@
             font: inherit;
             color: inherit;
             cursor: pointer;
+        }
+
+        /* ---- ESTILOS RESPONSIVOS PARA PANTALLA DIVIDIDA ---- */
+        @media (min-width: 1024px) {
+            .mk-layout-wrapper {
+                flex-direction: row !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                overflow: hidden !important;
+            }
+            .mk-left-banner {
+                width: 45% !important;
+                height: 100% !important;
+                min-height: 100% !important;
+            }
+            .mk-right-content {
+                width: 55% !important;
+                height: 100% !important;
+                overflow-y: auto !important;
+            }
+            .mk-hide-mobile {
+                display: block !important;
+            }
+            .mk-hide-desktop {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 1023px) {
+            .mk-layout-wrapper {
+                flex-direction: column !important;
+                min-height: 100vh !important;
+            }
+            .mk-left-banner {
+                width: 100% !important;
+                height: 200px !important;
+            }
+            .mk-right-content {
+                width: 100% !important;
+                flex: 1 !important;
+            }
+            .mk-hide-mobile {
+                display: none !important;
+            }
+            .mk-hide-desktop {
+                display: block !important;
+            }
         }
     </style>
 </head>

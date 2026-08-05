@@ -1,33 +1,33 @@
-<div class="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row bg-[#fafaf9] lg:overflow-hidden" style="min-height: 100vh; background-color: #fafaf9;">
+<div class="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row bg-[#fafaf9] lg:overflow-hidden mk-layout-wrapper" style="min-height: 100vh; background-color: #fafaf9; display: flex; width: 100%;">
 
     <!-- PANEL IMAGEN (banner móvil / panel izquierdo desktop) -->
-    <div class="relative h-[180px] sm:h-[220px] lg:h-full lg:w-[45%] flex-shrink-0 bg-[#0c0a09] overflow-hidden">
-        <img src="{{ asset('images/restaurant_bg.png') }}" alt="Restaurante Makabro" class="absolute inset-0 w-full h-full object-cover opacity-55" style="width: 100%; height: 100%; object-fit: cover;">
-        <div class="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-r from-transparent to-[#0c0a09]/90"></div>
-        <div class="absolute inset-0 flex flex-col justify-end p-4 sm:p-6 lg:p-12">
-            <div class="w-[40px] h-[40px] sm:w-[48px] sm:h-[48px] lg:w-[58px] lg:h-[58px] rounded-2xl bg-[#f59e0b] flex items-center justify-center text-xl sm:text-2xl lg:text-3xl font-black text-[#1c1917] shadow-lg shadow-amber-500/30 mb-2 sm:mb-3 lg:mb-4" style="width: 50px; height: 50px; border-radius: 16px; background-color: #f59e0b; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #1c1917; margin-bottom: 12px;">
+    <div class="relative h-[180px] sm:h-[220px] lg:h-full lg:w-[45%] flex-shrink-0 bg-[#0c0a09] overflow-hidden mk-left-banner" style="position: relative; background-color: #0c0a09; overflow: hidden; flex-shrink: 0;">
+        <img src="{{ asset('images/restaurant_bg.png') }}" alt="Restaurante Makabro" class="absolute inset-0 w-full h-full object-cover opacity-55" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.55;">
+        <div class="absolute inset-0 bg-gradient-to-b lg:bg-gradient-to-r from-transparent to-[#0c0a09]/90" style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(12,10,9,0.2) 0%, rgba(12,10,9,0.92) 100%);"></div>
+        <div class="absolute inset-0 flex flex-col justify-end p-4 sm:p-6 lg:p-12" style="position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 32px;">
+            <div class="w-[40px] h-[40px] sm:w-[48px] sm:h-[48px] lg:w-[58px] lg:h-[58px] rounded-2xl bg-[#f59e0b] flex items-center justify-center text-xl sm:text-2xl lg:text-3xl font-black text-[#1c1917] shadow-lg shadow-amber-500/30 mb-2 sm:mb-3 lg:mb-4" style="width: 52px; height: 52px; border-radius: 16px; background-color: #f59e0b; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #1c1917; margin-bottom: 12px; font-size: 24px;">
                 M
             </div>
-            <div class="text-base sm:text-lg lg:text-3xl font-black tracking-widest uppercase text-white mb-0.5 lg:mb-4" style="font-weight: 900; color: #ffffff; text-transform: uppercase;">
+            <div class="text-base sm:text-lg lg:text-3xl font-black tracking-widest uppercase text-white mb-0.5 lg:mb-4" style="font-weight: 900; color: #ffffff; text-transform: uppercase; letter-spacing: 2px; font-size: 22px;">
                 Makabro
             </div>
-            <div class="text-[9px] sm:text-[10px] lg:hidden text-stone-300 font-light tracking-wider mb-1 sm:mb-2">
+            <div class="text-[9px] sm:text-[10px] lg:hidden text-stone-300 font-light tracking-wider mb-1 sm:mb-2 mk-hide-desktop" style="font-size: 11px; color: #d6d3d1;">
                 Sistema de Gestión
             </div>
-            <div class="hidden lg:block max-w-[360px]">
-                <h1 class="text-3xl font-extrabold text-white leading-tight mb-3" style="font-size: 24px; font-weight: 800; color: #ffffff; margin-bottom: 10px;">Sabor artesanal,<br>gestión profesional.</h1>
-                <p class="text-sm text-stone-400 leading-relaxed" style="font-size: 13px; color: #a8a29e;">Administra tu sede, controla tus inventarios y optimiza tus recetas desde una sola plataforma.</p>
-                <div class="flex gap-2 mt-7" style="display: flex; gap: 8px; margin-top: 16px;">
+            <div class="hidden lg:block max-w-[360px] mk-hide-mobile">
+                <h1 class="text-3xl font-extrabold text-white leading-tight mb-3" style="font-size: 24px; font-weight: 800; color: #ffffff; margin-bottom: 10px; line-height: 1.3;">Sabor artesanal,<br>gestión profesional.</h1>
+                <p class="text-sm text-stone-400 leading-relaxed" style="font-size: 13px; color: #a8a29e; line-height: 1.6;">Administra tu sede, controla tus inventarios y optimiza tus recetas desde una sola plataforma.</p>
+                <div class="flex gap-2 mt-7" style="display: flex; gap: 8px; margin-top: 20px;">
                     <div class="h-1 w-9 bg-[#f59e0b] rounded-full" style="height: 4px; width: 36px; background-color: #f59e0b; border-radius: 9999px;"></div>
                     <div class="h-1 w-3 bg-stone-600 rounded-full" style="height: 4px; width: 12px; background-color: #57534e; border-radius: 9999px;"></div>
                     <div class="h-1 w-3 bg-stone-600 rounded-full" style="height: 4px; width: 12px; background-color: #57534e; border-radius: 9999px;"></div>
                 </div>
             </div>
         </div>
-        <div class="hidden lg:block absolute bottom-5 left-12 text-[11px] text-stone-500" style="position: absolute; bottom: 20px; left: 30px; font-size: 11px; color: #78716c;">© {{ date('Y') }} Makabro · Todos los derechos reservados.</div>
+        <div class="hidden lg:block absolute bottom-5 left-12 text-[11px] text-stone-500 mk-hide-mobile" style="position: absolute; bottom: 20px; left: 32px; font-size: 11px; color: #78716c;">© {{ date('Y') }} Makabro · Todos los derechos reservados.</div>
     </div>
 
-    <div class="flex-1 flex flex-col items-center justify-start p-6 sm:p-8 lg:p-16 bg-[#fafaf9] overflow-y-auto lg:h-full" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; background-color: #fafaf9;">
+    <div class="flex-1 flex flex-col items-center justify-start p-6 sm:p-8 lg:p-16 bg-[#fafaf9] overflow-y-auto lg:h-full mk-right-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; background-color: #fafaf9;">
         <div class="w-full max-w-[460px] my-auto py-6" style="width: 100%; max-width: 480px;">
 
             <!-- Mensaje de error -->
