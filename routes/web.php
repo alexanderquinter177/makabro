@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Livewire\Auth\SelectSede;
 
 use App\Http\Controllers\NovedadPrintController;
+use App\Http\Controllers\HistorialCargaPrintController;
 
 Route::redirect('/gestion', '/');
 Route::redirect('/gestion/login', '/login');
@@ -14,6 +15,10 @@ Route::get('/select-sede', SelectSede::class)
 
 Route::get('/novedades/{novedad}/imprimir', NovedadPrintController::class)
     ->name('novedades.imprimir')
+    ->middleware('auth');
+
+Route::get('/historial-cargas/{cargaHistorial}/imprimir', HistorialCargaPrintController::class)
+    ->name('historial-cargas.imprimir')
     ->middleware('auth');
 
 Route::get('/debug-upload', function () {

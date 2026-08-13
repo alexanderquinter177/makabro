@@ -47,6 +47,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'kardex'          => array_merge($estandar, ['exportar', 'pdf', 'reporte']),
             'inventario'      => array_merge($estandar, ['aprobar', 'rechazar', 'exportar', 'pdf']),
             'novedad'         => array_merge($estandar, ['resolver', 'asignar', 'rechazar']),
+            'historial_carga' => array_merge($estandar, ['importar', 'exportar_plantilla']),
 
             // ── Abastecimiento ───────────────────────────────────────────────────
             'proveedor'       => array_merge($estandar, ['cambiar_estado']),
@@ -114,6 +115,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'compra.ver_listado', 'compra.ver_detalle', 'compra.crear', 'compra.editar', 'compra.aprobar', 'compra.rechazar', 'compra.recibir',
             'compra_item.ver_listado', 'compra_item.ver_detalle', 'compra_item.crear', 'compra_item.editar', 'compra_item.recibir',
             'reporte_ventas.ver_listado', 'reporte_ventas.ver_detalle', 'reporte_ventas.importar', 'reporte_ventas.eliminar',
+            'historial_carga.ver_listado', 'historial_carga.ver_detalle', 'historial_carga.crear', 'historial_carga.importar', 'historial_carga.exportar_plantilla',
             'dashboard.ver_financiero', 'dashboard.ver_ventas', 'dashboard.ver_kpis',
         ]);
         $this->command->info('✅ Gerente de Sede creado (' . $gerente->permissions->count() . ' permisos)');
@@ -133,6 +135,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'kardex.ver_listado', 'kardex.ver_detalle',
             'compra.ver_listado', 'compra.ver_detalle',
             'compra_item.ver_listado', 'compra_item.ver_detalle',
+            'historial_carga.ver_listado', 'historial_carga.ver_detalle', 'historial_carga.crear', 'historial_carga.importar', 'historial_carga.exportar_plantilla',
         ]);
         $this->command->info('✅ Jefe de Cocina creado (' . $jefeCocina->permissions->count() . ' permisos)');
 
@@ -155,6 +158,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'compra.ver_listado', 'compra.ver_detalle', 'compra.recibir',
             'compra_item.ver_listado', 'compra_item.ver_detalle', 'compra_item.recibir',
             'reporte_ventas.ver_listado', 'reporte_ventas.ver_detalle', 'reporte_ventas.importar', 'reporte_ventas.eliminar',
+            'historial_carga.ver_listado', 'historial_carga.ver_detalle', 'historial_carga.crear', 'historial_carga.importar', 'historial_carga.exportar_plantilla',
         ]);
         $this->command->info('✅ Administrador de Inventario creado (' . $adminInventario->permissions->count() . ' permisos)');
 
