@@ -608,11 +608,14 @@ class CoctelSeeder extends Seeder
      */
     private function crearCoctel(string $nombre, int $categoriaId, int $unidadCompraId, array $ingredientes): void
     {
+        $sedeId = DB::table('sedes')->orderBy('id', 'asc')->value('id') ?? 1;
+
         // Buscar si ya existe o crear el coctel
         $coctel = Producto::firstOrCreate(
-            ['nombre' => $nombre],
+            ['nombre' => $nombre, 'sede_id' => $sedeId],
             [
                 'nombre' => $nombre,
+                'sede_id' => $sedeId,
                 'tipo' => 'venta',
                 'categoria_id' => $categoriaId,
                 'unidad_compra_id' => $unidadCompraId,
