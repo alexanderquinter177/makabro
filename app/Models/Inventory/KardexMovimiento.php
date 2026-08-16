@@ -53,7 +53,7 @@ class KardexMovimiento extends Model
 
     public function producto(): BelongsTo
     {
-        return $this->belongsTo(Producto::class);
+        return $this->belongsTo(Producto::class)->withoutGlobalScope('sede');
     }
 
     public function usuario(): BelongsTo

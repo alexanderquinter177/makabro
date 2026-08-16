@@ -54,7 +54,7 @@ class InventarioSede extends Model
     /** Producto/Insumo controlado */
     public function producto(): BelongsTo
     {
-        return $this->belongsTo(Producto::class);
+        return $this->belongsTo(Producto::class)->withoutGlobalScope('sede');
     }
 
     // -------------------------------------------------------------------------

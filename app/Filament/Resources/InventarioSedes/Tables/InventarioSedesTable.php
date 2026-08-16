@@ -28,11 +28,15 @@ class InventarioSedesTable
                 TextColumn::make('producto.nombre')
                     ->label('Producto')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('bold'),
 
-                TextColumn::make('producto.unidadCompra.nombre')
+                TextColumn::make('producto.unidadCompra.abreviatura')
                     ->label('Unidad')
-                    ->sortable(),
+                    ->badge()
+                    ->color('info')
+                    ->sortable()
+                    ->default('—'),
 
                 TextColumn::make('cantidad_actual')
                     ->label('Cantidad Actual')

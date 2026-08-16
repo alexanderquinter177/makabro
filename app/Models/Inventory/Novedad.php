@@ -88,13 +88,13 @@ class Novedad extends Model
     /** Plato / Producto afectado (si tipo_afectado = 'plato') */
     public function plato(): BelongsTo
     {
-        return $this->belongsTo(Producto::class, 'plato_id');
+        return $this->belongsTo(Producto::class, 'plato_id')->withoutGlobalScope('sede');
     }
 
     /** Producto afectado (si tipo_afectado = 'producto') */
     public function producto(): BelongsTo
     {
-        return $this->belongsTo(Producto::class);
+        return $this->belongsTo(Producto::class)->withoutGlobalScope('sede');
     }
 
     // -------------------------------------------------------------------------

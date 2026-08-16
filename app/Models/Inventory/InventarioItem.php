@@ -48,7 +48,7 @@ class InventarioItem extends Model
 
     public function producto(): BelongsTo
     {
-        return $this->belongsTo(Producto::class);
+        return $this->belongsTo(Producto::class)->withoutGlobalScope('sede');
     }
 
     // -------------------------------------------------------------------------
