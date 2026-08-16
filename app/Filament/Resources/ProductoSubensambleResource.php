@@ -36,7 +36,9 @@ class ProductoSubensambleResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('tipo', 'subensamble');
+        return parent::getEloquentQuery()
+            ->where('tipo', 'subensamble')
+            ->with(['categoria', 'unidadCompra', 'sede']);
     }
 
     public static function table(Table $table): Table

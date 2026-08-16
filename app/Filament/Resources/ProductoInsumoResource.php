@@ -36,7 +36,9 @@ class ProductoInsumoResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('tipo', 'insumo');
+        return parent::getEloquentQuery()
+            ->where('tipo', 'insumo')
+            ->with(['categoria', 'unidadCompra', 'sede']);
     }
 
     public static function table(Table $table): Table

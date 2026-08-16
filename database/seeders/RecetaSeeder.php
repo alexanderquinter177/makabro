@@ -567,10 +567,13 @@ class RecetaSeeder extends Seeder
      */
     private function crearReceta(string $nombre, int $categoriaId, int $unidadCompraId, array $ingredientes): void
     {
+        $sedeId = DB::table('sedes')->orderBy('id', 'asc')->value('id') ?? 1;
+
         $receta = Producto::firstOrCreate(
-            ['nombre' => $nombre],
+            ['nombre' => $nombre, 'sede_id' => $sedeId],
             [
                 'nombre' => $nombre,
+                'sede_id' => $sedeId,
                 'tipo' => 'venta',
                 'categoria_id' => $categoriaId,
                 'unidad_compra_id' => $unidadCompraId,
@@ -587,7 +590,20 @@ class RecetaSeeder extends Seeder
 
         $contador = 0;
         foreach ($ingredientes as $ingData) {
-            $ingrediente = Producto::where('nombre', $ingData['nombre'])->first();
+            $nombreBuscado = trim($ingData['nombre']);
+            
+            // 1. Buscar en la sede actual
+            $ingrediente = Producto::withoutGlobalScope('sede')
+                ->where('sede_id', $sedeId)
+                ->whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombreBuscado)])
+                ->first();
+
+            // 2. Si no se encuentra, buscar globalmente
+            if (!$ingrediente) {
+                $ingrediente = Producto::withoutGlobalScope('sede')
+                    ->whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombreBuscado)])
+                    ->first();
+            }
             
             if ($ingrediente) {
                 // ✅ Verificar si ya existe

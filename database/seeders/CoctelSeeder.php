@@ -625,7 +625,11 @@ class CoctelSeeder extends Seeder
         $ingredientesIds = [];
 
         foreach ($ingredientes as $ingData) {
-            $ingrediente = Producto::where('nombre', $ingData['nombre'])->first();
+            $nombreBuscado = trim($ingData['nombre']);
+            
+            $ingrediente = Producto::withoutGlobalScope('sede')
+                ->whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombreBuscado)])
+                ->first();
 
             if ($ingrediente) {
                 $ingredientesIds[$ingrediente->id] = [

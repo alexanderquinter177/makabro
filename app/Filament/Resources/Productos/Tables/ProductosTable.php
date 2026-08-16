@@ -63,6 +63,12 @@ class ProductosTable
                     ->boolean()
                     ->sortable(),
 
+                TextColumn::make('sede.nombre')
+                    ->label('Sede')
+                    ->badge()
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('created_at')
                     ->label('Creado')
                     ->dateTime('d/m/Y H:i')

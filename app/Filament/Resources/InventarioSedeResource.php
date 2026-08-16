@@ -38,11 +38,9 @@ class InventarioSedeResource extends Resource
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        if (session()->has('sede_id')) {
-            return parent::getEloquentQuery()->where('sede_id', session('sede_id'));
-        }
-
-        return parent::getEloquentQuery();
+        $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
+        return parent::getEloquentQuery()
+            ->when($sedeId, fn ($query) => $query->where('sede_id', $sedeId));
     }
 
     public static function getRelations(): array

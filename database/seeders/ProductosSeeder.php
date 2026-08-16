@@ -38,6 +38,8 @@ class ProductosSeeder extends Seeder
             $productosPorCategoria[$categoria][] = $productoData;
         }
 
+        $sedeId = DB::table('sedes')->orderBy('id', 'asc')->value('id') ?? 1;
+
         // ✅ Insertar por categoría para generar códigos secuenciales
         foreach ($productosPorCategoria as $categoriaNombre => $productosDeCategoria) {
             $categoriaId = $categorias[$categoriaNombre] ?? null;
@@ -77,6 +79,7 @@ class ProductosSeeder extends Seeder
 
                 // ✅ Insertar usando DB::table para evitar eventos
                 DB::table('productos')->insert([
+                    'sede_id' => $sedeId,
                     'categoria_id' => $categoriaId,
                     'nombre' => $productoData['nombre'],
                     'tipo' => 'insumo',

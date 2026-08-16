@@ -9,6 +9,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Hidden;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Grid;
 use App\Models\Catalog\Categoria;
@@ -23,6 +24,10 @@ class ProductoForm
     {
         return $schema
             ->components([
+                Hidden::make('sede_id')
+                    ->default(fn () => session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id)
+                    ->required(),
+
                 // ── SECCIÓN PRINCIPAL: Datos del Producto ─────────────────────────
                 Section::make('INFORMACIÓN GENERAL DEL PRODUCTO')
                     ->icon('heroicon-o-shopping-bag')
@@ -42,10 +47,15 @@ class ProductoForm
 
                                 TextInput::make('codigo')
                                     ->label('CÓDIGO / SKU')
-                                    ->required()
                                     ->maxLength(255)
-                                    ->unique(ignoreRecord: true)
                                     ->placeholder('AUTO-GENERADO')
+                                    ->unique(
+                                        modifyRuleUsing: function (\Illuminate\Validation\Rules\Unique $rule, callable $get) {
+                                            $sedeId = $get('sede_id') ?? session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
+                                            return !empty($sedeId) ? $rule->where('sede_id', $sedeId) : $rule;
+                                        },
+                                        ignoreRecord: true
+                                    )
                                     ->prefixIcon('heroicon-o-hashtag')
                                     ->disabled()
                                     ->dehydrated()
@@ -204,10 +214,27 @@ class ProductoForm
                                     ->schema([
                                         Select::make('producto_hijo_id')
                                             ->label('INGREDIENTE / INSUMO')
-                                            ->options(Producto::where('tipo', '!=', 'venta')
-                                                ->where('activo', true)
-                                                ->orderBy('nombre')
-                                                ->pluck('nombre', 'id'))
+                                            ->options(function ($record, $get) {
+                                                $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
+                                                $query = Producto::withoutGlobalScope('sede')
+                                                    ->where('tipo', '!=', 'venta');
+                                                
+                                                if (!empty($sedeId)) {
+                                                    $query->where('sede_id', $sedeId);
+                                                }
+
+                                                $currentId = $get('producto_hijo_id');
+                                                if ($currentId) {
+                                                    $query->where(function ($q) use ($currentId) {
+                                                        $q->where('activo', true)
+                                                          ->orWhere('id', $currentId);
+                                                    });
+                                                } else {
+                                                    $query->where('activo', true);
+                                                }
+
+                                                return $query->orderBy('nombre')->pluck('nombre', 'id');
+                                            })
                                             ->required()
                                             ->searchable()
                                             ->placeholder('Seleccione el ingrediente')
@@ -216,7 +243,7 @@ class ProductoForm
                                             ->reactive()
                                             ->afterStateUpdated(function ($state, $set, $get) {
                                                 if ($state) {
-                                                    $producto = Producto::with('unidadCompra')->find($state);
+                                                    $producto = Producto::withoutGlobalScope('sede')->with('unidadCompra')->find($state);
                                                     if ($producto) {
                                                         $unidad = $producto->unidadCompra?->abreviatura ?? 'UND';
                                                         $set('unidad_medida', $unidad);
@@ -243,7 +270,7 @@ class ProductoForm
                                             ->afterStateHydrated(function ($set, $get, $state) {
                                                 $productoHijoId = $get('producto_hijo_id');
                                                 if ($productoHijoId) {
-                                                    $producto = Producto::find($productoHijoId);
+                                                    $producto = Producto::withoutGlobalScope('sede')->find($productoHijoId);
                                                     if ($producto) {
                                                         $set('unidad_medida', $producto->unidadCompra?->abreviatura ?? 'UND');
                                                     }
@@ -260,7 +287,7 @@ class ProductoForm
                                             ->afterStateHydrated(function ($set, $get, $state) {
                                                 $productoHijoId = $get('producto_hijo_id');
                                                 if ($productoHijoId) {
-                                                    $producto = Producto::find($productoHijoId);
+                                                    $producto = Producto::withoutGlobalScope('sede')->find($productoHijoId);
                                                     if ($producto) {
                                                         $costoU = floatval($producto->getCostoUnitario());
                                                         $set('precio_unitario_ingrediente', number_format($costoU, 2, ',', '.'));
@@ -297,7 +324,7 @@ class ProductoForm
                                             ->afterStateHydrated(function ($set, $get, $state) {
                                                 $productoHijoId = $get('producto_hijo_id');
                                                 if ($productoHijoId) {
-                                                    $producto = Producto::find($productoHijoId);
+                                                    $producto = Producto::withoutGlobalScope('sede')->find($productoHijoId);
                                                     if ($producto) {
                                                         $costoU = floatval($producto->getCostoUnitario());
                                                         $cantidad = floatval($get('cantidad') ?? 0);
@@ -344,7 +371,7 @@ class ProductoForm
                                     $productoHijoId = $componente['producto_hijo_id'] ?? null;
                                     $cantidad = floatval($componente['cantidad'] ?? 0);
                                     if ($productoHijoId && $cantidad > 0) {
-                                        $producto = Producto::find($productoHijoId);
+                                        $producto = Producto::withoutGlobalScope('sede')->find($productoHijoId);
                                         if ($producto) {
                                             $costoNum = floatval($producto->getCostoUnitario()) * $cantidad;
                                             $totalCostoBatch += $costoNum;
@@ -835,7 +862,7 @@ class ProductoForm
                                         $unidadMedida = 'UND';
                                         
                                         if ($productoHijoId) {
-                                            $productoHijo = Producto::with('unidadCompra')->find($productoHijoId);
+                                            $productoHijo = Producto::withoutGlobalScope('sede')->with('unidadCompra')->find($productoHijoId);
                                             if ($productoHijo) {
                                                 $nombreItem = $productoHijo->nombre;
                                                 $precioIngrediente = floatval($productoHijo->getCostoUnitario());

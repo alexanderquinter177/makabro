@@ -8,14 +8,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasAuditSignature;
+use App\Traits\ScopedBySede;
 
 class Producto extends Model
 {
-    use SoftDeletes, HasAuditSignature;
+    use SoftDeletes, HasAuditSignature, ScopedBySede;
 
     protected $table = 'productos';
 
     protected $fillable = [
+        'sede_id',
         'categoria_id',
         'codigo',
         'nombre',
@@ -40,11 +42,15 @@ class Producto extends Model
     // Relaciones
     // -------------------------------------------------------------------------
 
+    public function sede(): BelongsTo
+    {
+        return $this->belongsTo(Sede::class, 'sede_id');
+    }
+
     public function categoria(): BelongsTo
     {
         return $this->belongsTo(Categoria::class);
     }
-
 
     public function unidadCompra(): BelongsTo
     {
@@ -68,7 +74,8 @@ class Producto extends Model
             'recetas_bom',
             'producto_padre_id',
             'producto_hijo_id'
-        )->withPivot('cantidad', 'nota')
+        )->withoutGlobalScope('sede')
+         ->withPivot('cantidad', 'nota')
          ->withTimestamps();
     }
 
@@ -79,7 +86,8 @@ class Producto extends Model
             'recetas_bom',
             'producto_hijo_id',
             'producto_padre_id'
-        )->withPivot('cantidad', 'nota')
+        )->withoutGlobalScope('sede')
+         ->withPivot('cantidad', 'nota')
          ->withTimestamps();
     }
 
@@ -90,7 +98,8 @@ class Producto extends Model
             'recetas_bom',
             'producto_padre_id',
             'producto_hijo_id'
-        )->withPivot('cantidad', 'nota')
+        )->withoutGlobalScope('sede')
+         ->withPivot('cantidad', 'nota')
          ->withTimestamps();
     }
 

@@ -36,7 +36,9 @@ class ProductoVentaResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('tipo', 'venta');
+        return parent::getEloquentQuery()
+            ->where('tipo', 'venta')
+            ->with(['categoria', 'unidadCompra', 'sede']);
     }
 
     public static function table(Table $table): Table

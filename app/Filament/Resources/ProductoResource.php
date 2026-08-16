@@ -28,6 +28,12 @@ class ProductoResource extends Resource
 
     protected static bool $shouldRegisterNavigation = false;
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['categoria', 'unidadCompra', 'sede']);
+    }
+
     public static function form(Schema $schema): Schema
     {
         return ProductoForm::configure($schema);

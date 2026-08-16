@@ -36,6 +36,13 @@ class NovedadResource extends Resource
         return NovedadesTable::configure($table);
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
+        return parent::getEloquentQuery()
+            ->when($sedeId, fn ($query) => $query->where('sede_id', $sedeId));
+    }
+
     public static function getRelations(): array
     {
         return [

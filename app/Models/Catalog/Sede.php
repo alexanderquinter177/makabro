@@ -71,6 +71,12 @@ class Sede extends Model
         return $this->hasMany(Compra::class);
     }
 
+    /** Productos exclusivos de esta sede */
+    public function productos(): HasMany
+    {
+        return $this->hasMany(Producto::class, 'sede_id');
+    }
+
     /** Platos disponibles en esta sede */
     public function platos(): HasMany
     {
