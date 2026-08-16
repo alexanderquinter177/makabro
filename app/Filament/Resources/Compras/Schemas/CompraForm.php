@@ -287,7 +287,25 @@ class CompraForm
                                     ->schema([
                                         Select::make('producto_id')
                                             ->label('Producto')
-                                            ->options(Producto::pluck('nombre', 'id'))
+                                            ->options(function (callable $get) {
+                                                $sedeId = $get('../../sede_id') ?? session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
+                                                $query = Producto::withoutGlobalScope('sede')->where('activo', true);
+                                                if ($sedeId) {
+                                                    $query->where('sede_id', $sedeId);
+                                                }
+                                                return $query->orderBy('nombre')->pluck('nombre', 'id');
+                                            })
+                                            ->getSearchResultsUsing(function (string $search, callable $get) {
+                                                $sedeId = $get('../../sede_id') ?? session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
+                                                $query = Producto::withoutGlobalScope('sede')
+                                                    ->where('activo', true)
+                                                    ->where('nombre', 'like', "%{$search}%");
+                                                if ($sedeId) {
+                                                    $query->where('sede_id', $sedeId);
+                                                }
+                                                return $query->limit(50)->pluck('nombre', 'id');
+                                            })
+                                            ->getOptionLabelUsing(fn ($value) => Producto::withoutGlobalScope('sede')->find($value)?->nombre)
                                             ->required()
                                             ->validationAttribute('Producto')
                                             ->searchable()
@@ -315,9 +333,22 @@ class CompraForm
                                                     ->required()
                                                     ->validationAttribute('Precio Compra'),
                                             ])
+                                            ->createOptionUsing(function (array $data, callable $get): int {
+                                                $sedeId = $get('../../sede_id') ?? session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
+                                                $producto = Producto::create([
+                                                    'nombre' => strtoupper($data['nombre']),
+                                                    'sede_id' => $sedeId,
+                                                    'tipo' => 'insumo',
+                                                    'categoria_id' => $data['categoria_id'],
+                                                    'unidad_compra_id' => $data['unidad_compra_id'],
+                                                    'precio_compra' => $data['precio_compra'],
+                                                    'activo' => true,
+                                                ]);
+                                                return $producto->id;
+                                            })
                                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                                 if ($state) {
-                                                    $producto = Producto::find($state);
+                                                    $producto = Producto::withoutGlobalScope('sede')->find($state);
                                                     if ($producto) {
                                                         $precio = $producto->precio_compra ?? 0;
                                                         $set('precio_unitario', number_format((float) $precio, 0, ',', '.'));

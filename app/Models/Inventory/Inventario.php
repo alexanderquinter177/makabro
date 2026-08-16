@@ -132,19 +132,44 @@ class Inventario extends Model
         return $this;
     }
 
-    /** Actualizar el stock en inventario_sede con los valores contados */
+    /** Actualizar el stock en inventario_sede con los valores contados y registrar en Kardex */
     public function actualizarStockSede()
     {
         foreach ($this->items as $item) {
-            $stock = InventarioSede::firstOrCreate([
+            $stock = InventarioSede::withTrashed()->firstOrCreate([
                 'sede_id' => $this->sede_id,
                 'producto_id' => $item->producto_id,
             ]);
-            
-            $stock->cantidad_actual = $item->cantidad_contada;
-            $stock->ultima_actualizacion = now();
+
+            if ($stock->trashed()) {
+                $stock->restore();
+            }
+
+            $saldoAnterior = (float) $stock->cantidad_actual;
+            $saldoNuevo = (float) $item->cantidad_contada;
+            $diff = $saldoNuevo - $saldoAnterior;
+
+            $stock->cantidad_actual = $saldoNuevo;
             $stock->updated_by = $this->usuario_id;
             $stock->save();
+
+            if ($diff != 0) {
+                $costoUnitario = (float) ($item->costo_unitario ?? $item->producto?->precio_compra ?? 0);
+                KardexMovimiento::create([
+                    'sede_id' => $this->sede_id,
+                    'producto_id' => $item->producto_id,
+                    'tipo_movimiento' => $diff > 0 ? 'ajuste_entrada' : 'ajuste_salida',
+                    'cantidad' => abs($diff),
+                    'saldo_anterior' => $saldoAnterior,
+                    'saldo_despues' => $saldoNuevo,
+                    'costo_unitario' => $costoUnitario,
+                    'costo_total' => abs($diff * $costoUnitario),
+                    'documento_origen_type' => self::class,
+                    'documento_origen_id' => $this->id,
+                    'notas' => 'Ajuste por conteo físico: ' . ($this->codigo_inventario ?? 'INV-' . $this->id),
+                    'created_by' => $this->usuario_id,
+                ]);
+            }
         }
         
         return $this;

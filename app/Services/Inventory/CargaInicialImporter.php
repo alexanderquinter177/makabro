@@ -26,6 +26,7 @@ class CargaInicialImporter
     ];
 
     private array $cache = [];
+    private int $sedeId = 1;
 
     /**
      * Método estático para compatibilidad
@@ -576,14 +577,15 @@ class CargaInicialImporter
 
     private function cargarCache(int $sedeId): void
     {
-        $productos = Producto::all();
+        $this->sedeId = $sedeId;
+        $productos = Producto::withoutGlobalScope('sede')->where('sede_id', $sedeId)->get();
         foreach ($productos as $producto) {
             $this->cache['productos'][$producto->id] = $producto;
             if ($producto->codigo) {
                 $this->cache['productos_por_codigo'][$producto->codigo] = $producto;
             }
         }
-        Log::info("   📦 {$productos->count()} productos cargados en caché");
+        Log::info("   📦 {$productos->count()} productos cargados en caché para la sede {$sedeId}");
         
         $stocks = InventarioSede::withTrashed()
             ->where('sede_id', $sedeId)
@@ -625,7 +627,9 @@ class CargaInicialImporter
                 return $this->cache['productos'][$productoId];
             }
             
-            $producto = Producto::find($productoId);
+            $producto = Producto::withoutGlobalScope('sede')
+                ->where('sede_id', $this->sedeId)
+                ->find($productoId);
             if ($producto) {
                 $this->cache['productos'][$productoId] = $producto;
                 if ($producto->codigo) {
@@ -641,7 +645,10 @@ class CargaInicialImporter
                 return $this->cache['productos_por_codigo'][$codigo];
             }
             
-            $producto = Producto::where('codigo', $codigo)->first();
+            $producto = Producto::withoutGlobalScope('sede')
+                ->where('sede_id', $this->sedeId)
+                ->where('codigo', $codigo)
+                ->first();
             if ($producto) {
                 $this->cache['productos'][$producto->id] = $producto;
                 $this->cache['productos_por_codigo'][$codigo] = $producto;
@@ -650,7 +657,14 @@ class CargaInicialImporter
         }
 
         if (!empty($datos['nombre'])) {
-            $producto = Producto::where('nombre', 'ILIKE', trim($datos['nombre']))->first();
+            $nombreBuscado = trim($datos['nombre']);
+            $producto = Producto::withoutGlobalScope('sede')
+                ->where('sede_id', $this->sedeId)
+                ->where(function ($q) use ($nombreBuscado) {
+                    $q->where('nombre', $nombreBuscado)
+                      ->orWhereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombreBuscado)]);
+                })
+                ->first();
             if ($producto) {
                 $this->cache['productos'][$producto->id] = $producto;
                 if ($producto->codigo) {

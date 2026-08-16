@@ -29,7 +29,25 @@ class InventarioSedeForm
 
                         Select::make('producto_id')
                             ->label('Producto / Insumo')
-                            ->options(Producto::pluck('nombre', 'id'))
+                            ->options(function (callable $get) {
+                                $sedeId = $get('sede_id') ?? session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
+                                $query = Producto::withoutGlobalScope('sede')->where('activo', true);
+                                if ($sedeId) {
+                                    $query->where('sede_id', $sedeId);
+                                }
+                                return $query->orderBy('nombre')->pluck('nombre', 'id');
+                            })
+                            ->getSearchResultsUsing(function (string $search, callable $get) {
+                                $sedeId = $get('sede_id') ?? session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
+                                $query = Producto::withoutGlobalScope('sede')
+                                    ->where('activo', true)
+                                    ->where('nombre', 'like', "%{$search}%");
+                                if ($sedeId) {
+                                    $query->where('sede_id', $sedeId);
+                                }
+                                return $query->limit(50)->pluck('nombre', 'id');
+                            })
+                            ->getOptionLabelUsing(fn ($value) => Producto::withoutGlobalScope('sede')->find($value)?->nombre)
                             ->required()
                             ->searchable()
                             ->placeholder('Seleccione el producto')

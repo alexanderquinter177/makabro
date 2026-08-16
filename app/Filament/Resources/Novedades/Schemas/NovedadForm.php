@@ -127,13 +127,31 @@ class NovedadForm
                             ->schema([
                                 Select::make('producto_id')
                                     ->label('Producto Relacionado')
-                                    ->options(Producto::where('activo', true)->pluck('nombre', 'id'))
+                                    ->options(function (callable $get) {
+                                        $sedeId = $get('sede_id') ?? session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
+                                        $query = Producto::withoutGlobalScope('sede')->where('activo', true);
+                                        if ($sedeId) {
+                                            $query->where('sede_id', $sedeId);
+                                        }
+                                        return $query->orderBy('nombre')->pluck('nombre', 'id');
+                                    })
+                                    ->getSearchResultsUsing(function (string $search, callable $get) {
+                                        $sedeId = $get('sede_id') ?? session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
+                                        $query = Producto::withoutGlobalScope('sede')
+                                            ->where('activo', true)
+                                            ->where('nombre', 'like', "%{$search}%");
+                                        if ($sedeId) {
+                                            $query->where('sede_id', $sedeId);
+                                        }
+                                        return $query->limit(50)->pluck('nombre', 'id');
+                                    })
+                                    ->getOptionLabelUsing(fn ($value) => Producto::withoutGlobalScope('sede')->find($value)?->nombre)
                                     ->searchable()
                                     ->placeholder('Seleccione el producto (si aplica)')
                                     ->live()
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         if ($state) {
-                                            $producto = Producto::find($state);
+                                            $producto = Producto::withoutGlobalScope('sede')->find($state);
                                             if ($producto) {
                                                 $precio = floatval($producto->precio_compra ?? 0);
                                                 $cantidad = floatval($get('cantidad') ?? 0);
@@ -152,7 +170,7 @@ class NovedadForm
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         $productoId = $get('producto_id');
                                         if ($productoId) {
-                                            $producto = Producto::find($productoId);
+                                            $producto = Producto::withoutGlobalScope('sede')->find($productoId);
                                             if ($producto) {
                                                 $precio = floatval($producto->precio_compra ?? 0);
                                                 $cantidad = floatval($state ?? 0);

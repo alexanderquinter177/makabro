@@ -33,7 +33,7 @@ class InventarioForm
                                     ->placeholder('Seleccione la sede')
                                     ->prefixIcon('heroicon-o-building-office-2')
                                     ->helperText('Sede donde se realiza el inventario')
-                                    ->default(fn () => auth()->user()?->sede_actual?->id ?? null)
+                                    ->default(fn () => session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_actual?->id)
                                     ->disabled(true)
                                     ->dehydrated(),
 

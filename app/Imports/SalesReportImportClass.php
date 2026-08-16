@@ -96,8 +96,14 @@ class SalesReportImportClass implements ToCollection
                 'porcentaje'      => $porcentaje,
             ];
 
-            // Buscar producto por nombre (cruce exacto en catálogo)
-            $producto = Producto::where('nombre', $productoNombre)->first();
+            // Buscar producto por nombre (cruce en catálogo para la sede del reporte)
+            $producto = Producto::withoutGlobalScope('sede')
+                ->where('sede_id', $this->sedeId)
+                ->where(function ($q) use ($productoNombre) {
+                    $q->where('nombre', $productoNombre)
+                      ->orWhereRaw('LOWER(TRIM(nombre)) = ?', [strtolower(trim($productoNombre))]);
+                })
+                ->first();
 
             // Buscar si tiene registro previo de stock en el inventario de esta sede específica
             $inventario = null;
