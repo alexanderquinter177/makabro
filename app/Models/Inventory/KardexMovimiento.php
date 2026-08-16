@@ -76,7 +76,7 @@ class KardexMovimiento extends Model
 
     public function scopeDeSede($query, int $sedeId)
     {
-        return $query->where('sede_id', $sedeId);
+        return $query->where($this->getTable() . '.sede_id', $sedeId);
     }
 
     public function scopeDeProducto($query, int $productoId)

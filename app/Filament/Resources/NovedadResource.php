@@ -40,7 +40,7 @@ class NovedadResource extends Resource
     {
         $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
         return parent::getEloquentQuery()
-            ->when($sedeId, fn ($query) => $query->where('sede_id', $sedeId));
+            ->when($sedeId, fn ($query) => $query->where('novedades.sede_id', $sedeId));
     }
 
     public static function getRelations(): array

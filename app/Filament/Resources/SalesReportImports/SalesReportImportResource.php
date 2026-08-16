@@ -40,7 +40,7 @@ class SalesReportImportResource extends Resource
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
         if (session()->has('sede_id')) {
-            return parent::getEloquentQuery()->where('sede_id', session('sede_id'));
+            return parent::getEloquentQuery()->where('sales_report_imports.sede_id', session('sede_id'));
         }
 
         return parent::getEloquentQuery();

@@ -64,7 +64,7 @@ class InventarioSede extends Model
     /** Filtrar por una sede específica */
     public function scopeDeSede($query, int $sedeId)
     {
-        return $query->where('sede_id', $sedeId);
+        return $query->where($this->getTable() . '.sede_id', $sedeId);
     }
 
     /** * Alerta Roja: Productos cuyo stock actual es menor o igual al mínimo.

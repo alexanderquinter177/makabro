@@ -75,7 +75,7 @@ class Inventario extends Model
     /** Filtrar por sede */
     public function scopeDeSede($query, int $sedeId)
     {
-        return $query->where('sede_id', $sedeId);
+        return $query->where($this->getTable() . '.sede_id', $sedeId);
     }
 
     /** Filtrar por tipo de inventario */

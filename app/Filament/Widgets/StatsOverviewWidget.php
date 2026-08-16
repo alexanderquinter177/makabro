@@ -50,9 +50,11 @@ class StatsOverviewWidget extends BaseStatsOverviewWidget
 
         // 3. Valor Totalizado de Inventarios (Existencias actuales a precio de costo)
         $valorInventario = InventarioSede::query()
-            ->when($sedeId, fn ($q) => $q->deSede($sedeId))
+            ->withoutGlobalScopes()
+            ->when($sedeId, fn ($q) => $q->where('inventario_sedes.sede_id', $sedeId))
             ->join('productos', 'inventario_sedes.producto_id', '=', 'productos.id')
             ->whereNull('productos.deleted_at')
+            ->whereNull('inventario_sedes.deleted_at')
             ->selectRaw('SUM(inventario_sedes.cantidad_actual * productos.precio_compra) as total_valor')
             ->value('total_valor') ?? 0;
 
