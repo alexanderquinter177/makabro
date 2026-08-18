@@ -20,6 +20,16 @@ class HistorialCargaForm
                     ->icon('heroicon-o-document-text')
                     ->schema([
                         Grid::make(2)->schema([
+                            Select::make('sede_id')
+                                ->label('Sede')
+                                ->options(\App\Models\Catalog\Sede::where('activo', true)->pluck('nombre', 'id'))
+                                ->required()
+                                ->searchable()
+                                ->default(fn () => session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id)
+                                ->disabled(true)
+                                ->dehydrated()
+                                ->prefixIcon('heroicon-o-building-office-2'),
+
                             DatePicker::make('fecha')
                                 ->label('Fecha de Carga')
                                 ->required()

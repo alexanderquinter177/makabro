@@ -54,9 +54,21 @@ class ProductosTable
                     ->sortable(),
 
                 TextColumn::make('precio_compra')
-                    ->label('Precio')
+                    ->label(fn () => match ($forceTipo) {
+                        'venta' => 'Costo Producto',
+                        'insumo' => 'Precio Compra',
+                        'subensamble' => 'Costo Producción',
+                        default => 'Costo / Precio',
+                    })
                     ->money('COP')
                     ->sortable(),
+
+                TextColumn::make('costo_venta')
+                    ->label('Costo Venta')
+                    ->money('COP')
+                    ->sortable()
+                    ->visible($forceTipo === 'venta' || $forceTipo === null)
+                    ->toggleable(),
 
                 IconColumn::make('activo')
                     ->label('Activo')

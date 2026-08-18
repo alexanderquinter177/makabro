@@ -34,7 +34,7 @@ class TendenciaComprasMermasWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual;
+        $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
 
         $startDateRaw = $this->filters['startDate'] ?? null;
         $endDateRaw   = $this->filters['endDate'] ?? null;

@@ -18,14 +18,13 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SedesSeeder::class,
             RolesAndPermissionsSeeder::class,
-            HistorialCargaPermissionsSeeder::class,
             UsersSeeder::class,
             CategoriasSeeder::class,
             UnidadesMedidaSeeder::class,           
             ProductosSeeder::class,
             SubRecetasSeeder::class,
             RecetaSeeder::class,
-            CoctelSeeder::class,
+           
         ]);
         
         if (DB::connection()->getDriverName() === 'pgsql') {

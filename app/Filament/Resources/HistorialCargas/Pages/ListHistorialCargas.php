@@ -34,17 +34,24 @@ class ListHistorialCargas extends ListRecords
                         'Content-Disposition' => 'attachment; filename="plantilla_carga_productos_' . date('Ymd_His') . '.csv"',
                     ];
 
-                    $callback = function () {
+                    $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
+
+                    $callback = function () use ($sedeId) {
                         $file = fopen('php://output', 'w');
                         // UTF-8 BOM para soporte correcto en Excel
                         fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
                         fputcsv($file, ['CODIGO', 'NOMBRE_PRODUCTO', 'CATEGORIA', 'TIPO_PRODUCTO', 'UNIDAD_MEDIDA', 'CANTIDAD', 'PRECIO'], ';');
 
-                        // Obtener todos los productos configurados en el catálogo
-                        $productos = \App\Models\Catalog\Producto::with(['categoria', 'unidadCompra'])
-                            ->where('activo', true)
-                            ->orderBy('codigo')
-                            ->get();
+                        // Obtener todos los productos configurados en el catálogo de la sede activa
+                        $query = \App\Models\Catalog\Producto::withoutGlobalScope('sede')
+                            ->with(['categoria', 'unidadCompra'])
+                            ->where('activo', true);
+
+                        if ($sedeId) {
+                            $query->where('sede_id', $sedeId);
+                        }
+
+                        $productos = $query->orderBy('codigo')->get();
 
                         if ($productos->count() > 0) {
                             foreach ($productos as $producto) {
@@ -86,6 +93,16 @@ class ListHistorialCargas extends ListRecords
                 ->modalHeading('Importar Carga de Productos')
                 ->modalDescription('Carga un archivo CSV separado por punto y coma (;) para registrar un nuevo historial de carga.')
                 ->form([
+                    Select::make('sede_id')
+                        ->label('Sede')
+                        ->options(\App\Models\Catalog\Sede::where('activo', true)->pluck('nombre', 'id'))
+                        ->required()
+                        ->searchable()
+                        ->default(fn () => session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id)
+                        ->disabled(true)
+                        ->dehydrated()
+                        ->prefixIcon('heroicon-o-building-office-2'),
+
                     DatePicker::make('fecha')
                         ->label('Fecha')
                         ->required()
@@ -235,6 +252,7 @@ class ListHistorialCargas extends ListRecords
 
                     DB::transaction(function () use ($data, $detalles, $valorTotal) {
                         $maestro = CargaHistorial::create([
+                            'sede_id' => $data['sede_id'] ?? session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id,
                             'fecha' => $data['fecha'],
                             'tipo' => $data['tipo'],
                             'cargo_recibe' => mb_strtoupper(trim($data['cargo_recibe']), 'UTF-8'),

@@ -284,9 +284,8 @@
         <!-- Encabezado Principal -->
         <div class="header">
             <div class="brand-section">
-                <h2>MAKABRO</h2>
+                <h2>{{ strtoupper($cargaHistorial->sede?->nombre ?? 'SEDE PRINCIPAL') }}</h2>
                 <p>Sistema de Control de Calidad e Inventarios</p>
-                <p>Módulo: <strong>Historial de Entregas</strong></p>
             </div>
             <div class="doc-title-box">
                 <div class="doc-title">Acta de Carga de Productos</div>
@@ -297,6 +296,12 @@
 
         <!-- Rejilla de Información General -->
         <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Sede / Punto de Operación</span>
+                <span class="info-value font-bold" style="color: #4f46e5;">
+                    {{ strtoupper($cargaHistorial->sede?->nombre ?? 'SEDE PRINCIPAL') }}
+                </span>
+            </div>
             <div class="info-item">
                 <span class="info-label">Fecha de Entrega</span>
                 <span class="info-value">{{ $cargaHistorial->fecha ? $cargaHistorial->fecha->format('d/m/Y') : 'N/A' }}</span>
@@ -318,10 +323,6 @@
             <div class="info-item">
                 <span class="info-label">Nombre Quien Recibe</span>
                 <span class="info-value">{{ strtoupper($cargaHistorial->nombre_recibe ?? 'N/A') }}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Total Ítems Cargados</span>
-                <span class="info-value">{{ $cargaHistorial->productos->count() }} Productos</span>
             </div>
             <div class="info-item">
                 <span class="info-label">Valor Total Carga</span>
@@ -346,13 +347,7 @@
                 </tr>
             </thead>
             <tbody>
-                @php
-                    $totalPrecio = 0;
-                @endphp
                 @forelse($cargaHistorial->productos as $index => $item)
-                    @php
-                        $totalPrecio += $item->precio;
-                    @endphp
                     <tr>
                         <td class="text-center font-bold" style="color: #64748b;">{{ $index + 1 }}</td>
                         <td class="font-bold" style="white-space: nowrap; font-family: monospace; font-size: 10px;">{{ $item->codigo }}</td>
@@ -370,8 +365,7 @@
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="5" class="text-right">TOTALES ACUMULADOS DE LA CARGA:</td>
-                    <td class="text-right font-bold">${{ number_format($totalPrecio, 2, ',', '.') }}</td>
+                    <td colspan="6" class="text-right font-bold">TOTAL ACUMULADO DE LA CARGA:</td>
                     <td class="text-right font-bold text-success" style="font-size: 11px;">
                         ${{ number_format($cargaHistorial->valor_total, 2, ',', '.') }}
                     </td>
@@ -382,9 +376,7 @@
         <!-- Firmas de Conformidad -->
         <div class="signatures-grid">
             <div class="signature-box">
-                <div class="signature-line"></div>
-                <div class="signature-role">Entregado Por</div>
-                <div class="signature-name">Nombre y Firma Entregador</div>
+                
             </div>
             <div class="signature-box">
                 <div class="signature-line"></div>

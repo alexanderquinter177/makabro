@@ -26,7 +26,7 @@ class TopProductosTableWidget extends BaseTableWidget
 
     public function table(Table $table): Table
     {
-        $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual;
+        $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
 
         $startDateRaw = $this->filters['startDate'] ?? null;
         $endDateRaw   = $this->filters['endDate'] ?? null;

@@ -24,7 +24,7 @@ class StatsOverviewWidget extends BaseStatsOverviewWidget
 
     protected function getStats(): array
     {
-        $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual;
+        $sedeId = session('sede_id') ?? auth()->user()?->sede_id_actual ?? auth()->user()?->sede_id;
 
         // Fechas del filtro o del mes actual por defecto
         $startDateRaw = $this->filters['startDate'] ?? null;

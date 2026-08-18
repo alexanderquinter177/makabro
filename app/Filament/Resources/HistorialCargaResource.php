@@ -25,9 +25,9 @@ class HistorialCargaResource extends Resource
 
     protected static string|\UnitEnum|null $navigationGroup = 'Inventario y Movimientos';
 
-    protected static ?string $modelLabel = 'Historial de Entregas';
+    protected static ?string $modelLabel = 'Acta de Entrega';
 
-    protected static ?string $pluralModelLabel = 'Historial de Entregas';
+    protected static ?string $pluralModelLabel = 'Acta de Entregas';
 
     protected static ?int $navigationSort = 5;
 

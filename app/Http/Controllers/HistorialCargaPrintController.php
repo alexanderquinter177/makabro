@@ -11,6 +11,7 @@ class HistorialCargaPrintController extends Controller
     {
         $cargaHistorial->load([
             'productos',
+            'sede',
         ]);
 
         return view('historial-cargas.imprimir', compact('cargaHistorial'));

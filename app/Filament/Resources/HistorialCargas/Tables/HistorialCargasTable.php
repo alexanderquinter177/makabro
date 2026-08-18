@@ -23,6 +23,13 @@ class HistorialCargasTable
                     ->sortable()
                     ->searchable(),
 
+                TextColumn::make('sede.nombre')
+                    ->label('Sede')
+                    ->badge()
+                    ->color('primary')
+                    ->sortable()
+                    ->searchable(),
+
                 TextColumn::make('fecha')
                     ->label('Fecha')
                     ->date('d/m/Y')

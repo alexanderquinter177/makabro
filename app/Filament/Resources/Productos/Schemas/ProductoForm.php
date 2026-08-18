@@ -145,28 +145,86 @@ class ProductoForm
                         Grid::make(['default' => 1, 'sm' => 2, 'md' => 3])
                             ->schema([
                                 TextInput::make('precio_compra')
-                                    ->label(fn ($get, $record) => ($get('tipo') ?? $record?->tipo ?? $forceTipo) === 'insumo' ? 'PRECIO DE COMPRA' : 'PRECIO DE VENTA ACTUAL')
+                                    ->label(fn ($get, $record) => ($get('tipo') ?? $record?->tipo ?? $forceTipo) === 'insumo' ? 'PRECIO DE COMPRA' : 'COSTO DEL PRODUCTO')
                                     ->default(0)
                                     ->prefix('$')
                                     ->placeholder('0')
                                     ->prefixIcon('heroicon-o-currency-dollar')
-                                    ->mask(RawJs::make('$money($input, ",", ".", 0)'))
+                                    ->mask(RawJs::make('$money($input, ".", ",", 0)'))
                                     ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 0, ',', '.') : '')
                                     ->dehydrateStateUsing(function ($state) {
                                         if ($state === null || $state === '') return 0;
-                                        if (is_numeric($state)) return (float) $state;
-                                        $clean = str_replace(['$', ' '], '', (string)$state);
-                                        if (str_contains($clean, ',') && str_contains($clean, '.')) {
+                                        if (is_int($state) || is_float($state)) return (float) $state;
+                                        $clean = trim(str_replace(['$', ' '], '', (string) $state));
+                                        if ($clean === '') return 0;
+                                        if (str_contains($clean, '.') && str_contains($clean, ',')) {
                                             $clean = str_replace('.', '', $clean);
                                             $clean = str_replace(',', '.', $clean);
-                                        } else {
+                                            return floatval($clean);
+                                        }
+                                        if (str_contains($clean, '.')) {
+                                            $parts = explode('.', $clean);
+                                            if (count($parts) > 2 || (count($parts) === 2 && strlen($parts[1]) === 3)) {
+                                                $clean = str_replace('.', '', $clean);
+                                            }
+                                            return floatval($clean);
+                                        }
+                                        if (str_contains($clean, ',')) {
+                                            $parts = explode(',', $clean);
+                                            if (count($parts) > 2 || (count($parts) === 2 && strlen($parts[1]) === 3)) {
+                                                $clean = str_replace(',', '', $clean);
+                                            } else {
+                                                $clean = str_replace(',', '.', $clean);
+                                            }
+                                            return floatval($clean);
+                                        }
+                                        return floatval($clean);
+                                    })
+                                    ->disabled(fn (callable $get, $record) => ($get('tipo') ?? $record?->tipo ?? $forceTipo) === 'venta')
+                                    ->dehydrated()
+                                    ->helperText(fn (callable $get, $record) => ($get('tipo') ?? $record?->tipo ?? $forceTipo) === 'venta' ? 'Costo base calculado de producción / receta (bloqueado)' : null)
+                                    ->live(onBlur: true)
+                                    ->visible(fn (callable $get, $record) => in_array($get('tipo') ?? $record?->tipo ?? $forceTipo, ['venta', 'insumo'])),
+
+                                TextInput::make('costo_venta')
+                                    ->label('COSTO DE VENTA')
+                                    ->default(0)
+                                    ->prefix('$')
+                                    ->placeholder('0')
+                                    ->prefixIcon('heroicon-o-calculator')
+                                    ->mask(RawJs::make('$money($input, ".", ",", 0)'))
+                                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((float) $state, 0, ',', '.') : '')
+                                    ->dehydrateStateUsing(function ($state) {
+                                        if ($state === null || $state === '') return 0;
+                                        if (is_int($state) || is_float($state)) return (float) $state;
+                                        $clean = trim(str_replace(['$', ' '], '', (string) $state));
+                                        if ($clean === '') return 0;
+                                        if (str_contains($clean, '.') && str_contains($clean, ',')) {
                                             $clean = str_replace('.', '', $clean);
                                             $clean = str_replace(',', '.', $clean);
+                                            return floatval($clean);
+                                        }
+                                        if (str_contains($clean, '.')) {
+                                            $parts = explode('.', $clean);
+                                            if (count($parts) > 2 || (count($parts) === 2 && strlen($parts[1]) === 3)) {
+                                                $clean = str_replace('.', '', $clean);
+                                            }
+                                            return floatval($clean);
+                                        }
+                                        if (str_contains($clean, ',')) {
+                                            $parts = explode(',', $clean);
+                                            if (count($parts) > 2 || (count($parts) === 2 && strlen($parts[1]) === 3)) {
+                                                $clean = str_replace(',', '', $clean);
+                                            } else {
+                                                $clean = str_replace(',', '.', $clean);
+                                            }
+                                            return floatval($clean);
                                         }
                                         return floatval($clean);
                                     })
                                     ->live(onBlur: true)
-                                    ->visible(fn (callable $get, $record) => in_array($get('tipo') ?? $record?->tipo ?? $forceTipo, ['venta', 'insumo'])),
+                                    ->helperText('Costo manual fijado para la venta')
+                                    ->visible(fn (callable $get, $record) => in_array($get('tipo') ?? $record?->tipo ?? $forceTipo, ['venta'])),
 
                                 TextInput::make('proveedor_habitual')
                                     ->label('PROVEEDOR HABITUAL')
@@ -388,23 +446,40 @@ class ProductoForm
                                 $costoUnitarioSub = $rendimientoBatch > 0 ? ($totalCostoBatch / $rendimientoBatch) : $totalCostoBatch;
                                 $totalCosto = ($tipo === 'subensamble') ? $costoUnitarioSub : $totalCostoBatch;
 
-                                $rawPrecioVenta = $get('precio_compra') ?? '0';
-                                if (is_numeric($rawPrecioVenta)) {
-                                    $precioVenta = floatval($rawPrecioVenta);
-                                } else {
-                                    $cleanP = str_replace(['$', ' '], '', (string)$rawPrecioVenta);
-                                    if (str_contains($cleanP, ',') && str_contains($cleanP, '.')) {
-                                        $cleanP = str_replace('.', '', $cleanP);
-                                        $cleanP = str_replace(',', '.', $cleanP);
-                                    } elseif (str_contains($cleanP, ',')) {
-                                        $cleanP = str_replace(',', '.', $cleanP);
-                                    } else {
-                                        $cleanP = str_replace('.', '', $cleanP);
+                                $parseCurrency = function ($val) {
+                                    if ($val === null || $val === '') return 0;
+                                    if (is_int($val) || is_float($val)) return (float) $val;
+                                    $clean = trim(str_replace(['$', ' '], '', (string) $val));
+                                    if ($clean === '') return 0;
+                                    if (str_contains($clean, '.') && str_contains($clean, ',')) {
+                                        $clean = str_replace('.', '', $clean);
+                                        $clean = str_replace(',', '.', $clean);
+                                        return floatval($clean);
                                     }
-                                    $precioVenta = floatval($cleanP);
-                                }
-                                $porcentajeCosto = $precioVenta > 0 ? ($totalCosto / $precioVenta) * 100 : 0;
-                                $beneficio = $precioVenta - $totalCosto;
+                                    if (str_contains($clean, '.')) {
+                                        $parts = explode('.', $clean);
+                                        if (count($parts) > 2 || (count($parts) === 2 && strlen($parts[1]) === 3)) {
+                                            $clean = str_replace('.', '', $clean);
+                                        }
+                                        return floatval($clean);
+                                    }
+                                    if (str_contains($clean, ',')) {
+                                        $parts = explode(',', $clean);
+                                        if (count($parts) > 2 || (count($parts) === 2 && strlen($parts[1]) === 3)) {
+                                            $clean = str_replace(',', '', $clean);
+                                        } else {
+                                            $clean = str_replace(',', '.', $clean);
+                                        }
+                                        return floatval($clean);
+                                    }
+                                    return floatval($clean);
+                                };
+
+                                $rawCostoVenta = $get('costo_venta') ?? $record?->costo_venta ?? 0;
+                                $costoVenta = $parseCurrency($rawCostoVenta);
+
+                                $porcentajeCosto = $costoVenta > 0 ? ($totalCosto / $costoVenta) * 100 : 0;
+                                $beneficio = $costoVenta - $totalCosto;
 
                                 // Configuración de colores y estados de rentabilidad
                                 if ($porcentajeCosto > 45) {
@@ -424,8 +499,8 @@ class ProductoForm
                                     $costoLabel = 'EXCELENTE';
                                 }
 
-                                $utilidadColorClass = $beneficio > 0 ? 'mk-color-emerald' : 'mk-color-rose';
-                                $utilidadBadgeClass = $beneficio > 0 ? 'mk-badge-emerald' : 'mk-badge-rose';
+                                $utilidadColorClass = $beneficio >= 0 ? 'mk-color-emerald' : 'mk-color-rose';
+                                $utilidadBadgeClass = $beneficio >= 0 ? 'mk-badge-emerald' : 'mk-badge-rose';
 
                                 // Renderizar el panel con diseño UI Premium mediante CSS incrustado
                                 $html = '
@@ -767,31 +842,31 @@ class ProductoForm
                                     $html .= '      </div>';
                                     $html .= '    </div>';
                                 } else {
-                                    // 1. PRECIO DE VENTA
+                                    // 1. COSTO DE VENTA (MANUAL)
                                     $html .= '    <div class="mk-kpi-card mk-card-blue-border">';
                                     $html .= '      <div class="mk-kpi-header">';
-                                    $html .= '        <span class="mk-kpi-title">Precio de Venta</span>';
+                                    $html .= '        <span class="mk-kpi-title">Costo de Venta</span>';
                                     $html .= '        <span class="mk-icon-wrapper mk-icon-blue">';
                                     $html .= '          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
                                     $html .= '        </span>';
                                     $html .= '      </div>';
                                     $html .= '      <div class="mk-kpi-value-container">';
-                                    $html .= '        <span class="mk-kpi-value">$ ' . number_format($precioVenta, 0, ',', '.') . '</span>';
-                                    $html .= '        <span class="mk-kpi-label" style="background: rgba(59,130,246,0.1); color:#2563eb;">VENTA</span>';
+                                    $html .= '        <span class="mk-kpi-value">$ ' . number_format($costoVenta, 0, ',', '.') . '</span>';
+                                    $html .= '        <span class="mk-kpi-label" style="background: rgba(59,130,246,0.1); color:#2563eb;">MANUAL</span>';
                                     $html .= '      </div>';
                                     $html .= '    </div>';
 
-                                    // 2. COSTO TOTAL DE PRODUCCIÓN
+                                    // 2. COSTO TOTAL DEL PRODUCTO (INSUMOS / BOM)
                                     $html .= '    <div class="mk-kpi-card mk-card-rose-border">';
                                     $html .= '      <div class="mk-kpi-header">';
-                                    $html .= '        <span class="mk-kpi-title">Costo Insumos</span>';
+                                    $html .= '        <span class="mk-kpi-title">Costo del Producto</span>';
                                     $html .= '        <span class="mk-icon-wrapper mk-icon-rose">';
                                     $html .= '          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>';
                                     $html .= '        </span>';
                                     $html .= '      </div>';
                                     $html .= '      <div class="mk-kpi-value-container">';
                                     $html .= '        <span class="mk-kpi-value mk-color-rose">$ ' . number_format($totalCosto, 0, ',', '.') . '</span>';
-                                    $html .= '        <span class="mk-kpi-label mk-badge-rose">BOM</span>';
+                                    $html .= '        <span class="mk-kpi-label mk-badge-rose">BOM / RECETA</span>';
                                     $html .= '      </div>';
                                     $html .= '    </div>';
 
@@ -809,10 +884,10 @@ class ProductoForm
                                     $html .= '      </div>';
                                     $html .= '    </div>';
 
-                                    // 4. MARGEN / GANANCIA
+                                    // 4. MARGEN / UTILIDAD
                                     $html .= '    <div class="mk-kpi-card mk-card-emerald-border">';
                                     $html .= '      <div class="mk-kpi-header">';
-                                    $html .= '        <span class="mk-kpi-title">Utilidad Bruta</span>';
+                                    $html .= '        <span class="mk-kpi-title">Margen / Utilidad</span>';
                                     $html .= '        <span class="mk-icon-wrapper mk-icon-emerald">';
                                     $html .= '          <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>';
                                     $html .= '        </span>';

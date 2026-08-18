@@ -23,6 +23,7 @@ class Producto extends Model
         'nombre',
         'tipo',      
         'precio_compra',
+        'costo_venta',
         'proveedor_habitual',
         'activo',
         'notas',
@@ -34,6 +35,7 @@ class Producto extends Model
 
     protected $casts = [
         'precio_compra' => 'decimal:2',
+        'costo_venta' => 'decimal:2',
         'activo' => 'boolean',
         'deleted_at' => 'datetime',
     ];

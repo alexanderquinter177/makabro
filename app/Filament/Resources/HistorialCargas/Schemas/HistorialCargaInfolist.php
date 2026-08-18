@@ -19,6 +19,14 @@ class HistorialCargaInfolist
                     ->icon('heroicon-o-document-text')
                     ->schema([
                         Grid::make(2)->schema([
+                            TextEntry::make('sede.nombre')
+                                ->label('Sede')
+                                ->icon('heroicon-o-building-office-2')
+                                ->weight('bold')
+                                ->badge()
+                                ->color('primary')
+                                ->default('—'),
+
                             TextEntry::make('fecha')
                                 ->label('Fecha de Carga')
                                 ->icon('heroicon-o-calendar')
