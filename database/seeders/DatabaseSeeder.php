@@ -20,10 +20,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             UsersSeeder::class,
             CategoriasSeeder::class,
-            UnidadesMedidaSeeder::class,           
-            ProductosSeeder::class,
-            SubRecetasSeeder::class,
-            RecetaSeeder::class,
+            UnidadesMedidaSeeder::class
            
         ]);
         
